@@ -1,0 +1,84 @@
+{
+  "entities": {
+    "Inquiry": {
+      "title": "Academy Inquiry & Admission",
+      "description": "Student admissions, free-trial bookings, and contact inquiries for Faizan-e-Mustafa Online Academy",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["free_trial", "admission", "inquiry", "contact"],
+          "description": "Type of inquiry"
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "parentName": {
+          "type": "string",
+          "description": "Parent or guardian name"
+        },
+        "age": {
+          "type": "string",
+          "description": "Age of the student"
+        },
+        "country": {
+          "type": "string",
+          "description": "Country of residence"
+        },
+        "whatsapp": {
+          "type": "string",
+          "description": "WhatsApp contact number with country code"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address"
+        },
+        "course": {
+          "type": "string",
+          "description": "Selected Quran or Islamic studies course"
+        },
+        "timing": {
+          "type": "string",
+          "description": "Preferred class timing"
+        },
+        "genderPreference": {
+          "type": "string",
+          "description": "Teacher gender preference (Any, Male Teacher, Female Teacher)"
+        },
+        "message": {
+          "type": "string",
+          "description": "Inquiry details, prior knowledge, or specific requests"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["New", "Contacted", "Enrolled", "Completed"],
+          "description": "Current workflow state"
+        },
+        "isDemo": {
+          "type": "boolean",
+          "description": "Flag to distinguish development sample data from real production submissions"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO 8601 creation timestamp"
+        },
+        "adminNotes": {
+          "type": "string",
+          "description": "Internal administrative follow-up notes"
+        }
+      },
+      "required": ["studentName", "whatsapp", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/inquiries/{inquiryId}": {
+      "schema": "Inquiry",
+      "description": "Collection of all academy student admissions, trial requests, and inquiries"
+    }
+  }
+}

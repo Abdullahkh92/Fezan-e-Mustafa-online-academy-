@@ -1,8 +1,15 @@
 import express, { Request, Response } from 'express';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import {
+  createInquiryInFirestore,
+  getInquiriesFromFirestore,
+  updateInquiryInFirestore,
+  deleteInquiryInFirestore,
+  seedDemoRecordsIfEmpty,
+  InquiryDocument
+} from './src/server/firestoreService.ts';
 
 dotenv.config();
 
@@ -14,57 +21,10 @@ const PORT = 3000;
 
 app.use(express.json());
 
-// Persistent database file setup
-const DATA_DIR = path.resolve(__dirname, 'data');
-const DB_FILE = path.resolve(DATA_DIR, 'academy_db.json');
-
-interface InquiryRecord {
-  id: string;
-  type: 'free_trial' | 'admission' | 'inquiry' | 'contact';
-  studentName: string;
-  parentName: string;
-  age: string;
-  country: string;
-  whatsapp: string;
-  email: string;
-  course: string;
-  timing: string;
-  genderPreference?: 'Any' | 'Male Teacher' | 'Female Teacher';
-  message: string;
-  status: 'New' | 'Contacted' | 'Enrolled' | 'Completed';
-  createdAt: string;
-  adminNotes?: string;
-}
-
-// Ensure database directory and file exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-function loadDatabase(): InquiryRecord[] {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (err) {
-    console.error('Error reading database file:', err);
-  }
-  return [];
-}
-
-function saveDatabase(records: InquiryRecord[]) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(records, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving database file:', err);
-  }
-}
-
-// Initial seed data if database is empty
-const initialSeedRecords: InquiryRecord[] = [
+// Initial demo records with isDemo: true to separate from real production submissions
+const initialSeedRecords: InquiryDocument[] = [
   {
-    id: 'fma-' + Date.now() + '-1',
+    id: 'fma-demo-1',
     type: 'free_trial',
     studentName: 'Zayd Al-Mansoor',
     parentName: 'Tariq Al-Mansoor',
@@ -78,10 +38,11 @@ const initialSeedRecords: InquiryRecord[] = [
     message: 'We want our son Zayd to start learning Qaida from the basic letters with Tajweed pronunciation. Interested in a 3-day free trial on Zoom.',
     status: 'New',
     createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    adminNotes: 'Requested male teacher. UK time zone.'
+    adminNotes: 'Requested male teacher. UK time zone.',
+    isDemo: true
   },
   {
-    id: 'fma-' + Date.now() + '-2',
+    id: 'fma-demo-2',
     type: 'admission',
     studentName: 'Amina Fatima',
     parentName: 'Maryam Siddiqui',
@@ -95,10 +56,11 @@ const initialSeedRecords: InquiryRecord[] = [
     message: 'Amina finished her Noorani Qaida and wants to read the full Quran fluently. Please assign a female teacher.',
     status: 'Contacted',
     createdAt: new Date(Date.now() - 3600000 * 20).toISOString(),
-    adminNotes: 'Contacted parent via WhatsApp. Scheduled trial for Saturday.'
+    adminNotes: 'Contacted parent via WhatsApp. Scheduled trial for Saturday.',
+    isDemo: true
   },
   {
-    id: 'fma-' + Date.now() + '-3',
+    id: 'fma-demo-3',
     type: 'free_trial',
     studentName: 'Muhammad Hamza',
     parentName: 'Rashid Khan',
@@ -112,10 +74,11 @@ const initialSeedRecords: InquiryRecord[] = [
     message: 'Hamza has memorized 5 Juz and wants to continue full Hifz with a systematic daily routine.',
     status: 'Enrolled',
     createdAt: new Date(Date.now() - 3600000 * 48).toISOString(),
-    adminNotes: 'Student evaluated and enrolled in Morning Hifz track.'
+    adminNotes: 'Student evaluated and enrolled in Morning Hifz track.',
+    isDemo: true
   },
   {
-    id: 'fma-' + Date.now() + '-4',
+    id: 'fma-demo-4',
     type: 'contact',
     studentName: 'Dr. Bilal Qureshi',
     parentName: 'Self',
@@ -129,19 +92,21 @@ const initialSeedRecords: InquiryRecord[] = [
     message: 'As a working professional, I want to refine my Tajweed rules and Makharij. Inquiring about 1-on-1 adult flexible slots.',
     status: 'New',
     createdAt: new Date(Date.now() - 3600000 * 12).toISOString(),
-    adminNotes: 'Adult student inquiry for advanced Tajweed.'
+    adminNotes: 'Adult student inquiry for advanced Tajweed.',
+    isDemo: true
   }
 ];
 
-// Initialize with seed data if file doesn't exist or is empty
-if (!fs.existsSync(DB_FILE) || loadDatabase().length === 0) {
-  saveDatabase(initialSeedRecords);
-}
+// Seed Firestore with demo records only if the cloud collection is empty
+seedDemoRecordsIfEmpty(initialSeedRecords).catch((err) => {
+  console.error('[Startup] Failed to check/seed Firestore:', err);
+});
 
-// REST API Endpoints
+// REST API Endpoints with Real Cloud Firestore Persistence
 
 // 1. Submit form (Free Trial, Admission, Contact, Inquiry)
-app.post('/api/inquiries', (req: Request, res: Response) => {
+// STRICT REQUIREMENT: Only return HTTP 201 after record is confirmed written to Firestore. If write fails, throw HTTP 500.
+app.post('/api/inquiries', async (req: Request, res: Response) => {
   try {
     const {
       type = 'inquiry',
@@ -161,8 +126,10 @@ app.post('/api/inquiries', (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Student name and WhatsApp number are required' });
     }
 
-    const newRecord: InquiryRecord = {
-      id: 'fma-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+    const uniqueId = 'fma-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
+
+    const newRecord: InquiryDocument = {
+      id: uniqueId,
       type,
       studentName: studentName.trim(),
       parentName: (parentName || studentName).trim(),
@@ -175,30 +142,36 @@ app.post('/api/inquiries', (req: Request, res: Response) => {
       genderPreference,
       message: (message || '').trim(),
       status: 'New',
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      isDemo: false // Real production user submission
     };
 
-    const records = loadDatabase();
-    records.unshift(newRecord);
-    saveDatabase(records);
+    // Await actual Cloud Firestore persistence.
+    // If Firebase write fails or network disconnects, this throws and jumps directly to catch block.
+    await createInquiryInFirestore(newRecord);
 
-    res.status(201).json({
+    console.log(`[Firestore] Successfully persisted inquiry ${newRecord.id} to Cloud Firestore.`);
+
+    return res.status(201).json({
       success: true,
       message: 'Your application has been received successfully! Our academic coordinator will contact you on WhatsApp shortly.',
       record: newRecord
     });
-  } catch (error) {
-    console.error('Error submitting inquiry:', error);
-    res.status(500).json({ error: 'Failed to process inquiry' });
+  } catch (error: any) {
+    console.error('[Firestore Error] Failed to persist inquiry to Cloud Firestore:', error);
+    // Explicit HTTP 500 error returned to client so user is never misled
+    return res.status(500).json({
+      error: 'Database storage error: Failed to save application to cloud database. Please try again or contact us directly on WhatsApp.'
+    });
   }
 });
 
-// 2. Admin: Get all inquiries with search & filter
-app.get('/api/admin/inquiries', (req: Request, res: Response) => {
+// 2. Admin: Get all inquiries with search & filter from Cloud Firestore
+app.get('/api/admin/inquiries', async (req: Request, res: Response) => {
   try {
     const { search = '', status = 'All', type = 'All', course = 'All' } = req.query;
 
-    let records = loadDatabase();
+    let records = await getInquiriesFromFirestore();
 
     if (search && typeof search === 'string') {
       const q = search.toLowerCase();
@@ -225,78 +198,68 @@ app.get('/api/admin/inquiries', (req: Request, res: Response) => {
       records = records.filter(r => r.course === course);
     }
 
-    res.json({
+    return res.json({
       success: true,
       count: records.length,
       records
     });
   } catch (error) {
-    console.error('Error fetching admin inquiries:', error);
-    res.status(500).json({ error: 'Failed to retrieve records' });
+    console.error('[Firestore Error] Error fetching admin inquiries:', error);
+    return res.status(500).json({ error: 'Failed to retrieve records from cloud database' });
   }
 });
 
-// 3. Admin: Update inquiry status or notes
-app.patch('/api/admin/inquiries/:id', (req: Request, res: Response) => {
+// 3. Admin: Update inquiry status or notes in Cloud Firestore
+app.patch('/api/admin/inquiries/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
 
-    const records = loadDatabase();
-    const index = records.findIndex(r => r.id === id);
+    const updates: Partial<Pick<InquiryDocument, 'status' | 'adminNotes'>> = {};
+    if (status) updates.status = status;
+    if (adminNotes !== undefined) updates.adminNotes = adminNotes;
 
-    if (index === -1) {
-      return res.status(404).json({ error: 'Record not found' });
+    const updated = await updateInquiryInFirestore(id, updates);
+
+    if (!updated) {
+      return res.status(404).json({ error: 'Record not found in cloud database' });
     }
 
-    if (status) {
-      records[index].status = status;
-    }
-    if (adminNotes !== undefined) {
-      records[index].adminNotes = adminNotes;
-    }
-
-    saveDatabase(records);
-
-    res.json({
+    return res.json({
       success: true,
-      message: 'Record updated successfully',
-      record: records[index]
+      message: 'Record updated successfully in cloud database',
+      record: updated
     });
   } catch (error) {
-    console.error('Error updating inquiry:', error);
-    res.status(500).json({ error: 'Failed to update record' });
+    console.error('[Firestore Error] Error updating inquiry:', error);
+    return res.status(500).json({ error: 'Failed to update record in cloud database' });
   }
 });
 
-// 4. Admin: Delete inquiry
-app.delete('/api/admin/inquiries/:id', (req: Request, res: Response) => {
+// 4. Admin: Delete inquiry from Cloud Firestore
+app.delete('/api/admin/inquiries/:id', async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    let records = loadDatabase();
-    const initialLength = records.length;
-    records = records.filter(r => r.id !== id);
+    const deleted = await deleteInquiryInFirestore(id);
 
-    if (records.length === initialLength) {
-      return res.status(404).json({ error: 'Record not found' });
+    if (!deleted) {
+      return res.status(404).json({ error: 'Record not found in cloud database' });
     }
 
-    saveDatabase(records);
-
-    res.json({
+    return res.json({
       success: true,
-      message: 'Record deleted successfully'
+      message: 'Record deleted successfully from cloud database'
     });
   } catch (error) {
-    console.error('Error deleting inquiry:', error);
-    res.status(500).json({ error: 'Failed to delete record' });
+    console.error('[Firestore Error] Error deleting inquiry:', error);
+    return res.status(500).json({ error: 'Failed to delete record from cloud database' });
   }
 });
 
-// 5. Admin: Aggregated stats
-app.get('/api/admin/stats', (_req: Request, res: Response) => {
+// 5. Admin: Aggregated stats from Cloud Firestore
+app.get('/api/admin/stats', async (_req: Request, res: Response) => {
   try {
-    const records = loadDatabase();
+    const records = await getInquiriesFromFirestore();
     const total = records.length;
     const newCount = records.filter(r => r.status === 'New').length;
     const contactedCount = records.filter(r => r.status === 'Contacted').length;
@@ -305,28 +268,35 @@ app.get('/api/admin/stats', (_req: Request, res: Response) => {
 
     const freeTrials = records.filter(r => r.type === 'free_trial').length;
     const admissions = records.filter(r => r.type === 'admission').length;
+    const realSubmissions = records.filter(r => !r.isDemo).length;
 
-    res.json({
+    return res.json({
       total,
       newCount,
       contactedCount,
       enrolledCount,
       completedCount,
       freeTrials,
-      admissions
+      admissions,
+      realSubmissions
     });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to compute stats' });
+    console.error('[Firestore Error] Error computing stats:', error);
+    return res.status(500).json({ error: 'Failed to compute stats from cloud database' });
   }
 });
 
-// 6. Admin: Reset or Re-seed demo data if desired
-app.post('/api/admin/seed', (_req: Request, res: Response) => {
+// 6. Admin: Seed demo data if requested explicitly
+app.post('/api/admin/seed', async (_req: Request, res: Response) => {
   try {
-    saveDatabase(initialSeedRecords);
-    res.json({ success: true, message: 'Sample records restored', records: initialSeedRecords });
+    for (const record of initialSeedRecords) {
+      await createInquiryInFirestore(record);
+    }
+    const all = await getInquiriesFromFirestore();
+    return res.json({ success: true, message: 'Sample records restored in Firestore', records: all });
   } catch (error) {
-    res.status(500).json({ error: 'Failed to seed records' });
+    console.error('[Firestore Error] Error re-seeding records:', error);
+    return res.status(500).json({ error: 'Failed to seed records in cloud database' });
   }
 });
 
@@ -351,6 +321,7 @@ async function startServer() {
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Faizan-e-Mustafa Online Academy server running on http://localhost:${PORT}`);
+    console.log(`Cloud Firestore integration active: Persistent database in use.`);
   });
 }
 

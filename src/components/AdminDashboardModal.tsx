@@ -15,7 +15,9 @@ import {
   Eye,
   MessageCircle,
   Sparkles,
-  Filter
+  Filter,
+  CloudCheck,
+  ShieldAlert
 } from 'lucide-react';
 
 interface Props {
@@ -110,7 +112,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
         }
         setDeleteConfirmId(null);
         fetchStats();
-        showNotification('Record deleted successfully');
+        showNotification('Record deleted from Cloud Firestore');
       }
     } catch (err) {
       console.error('Failed to delete:', err);
@@ -130,7 +132,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
         if (selectedRecord && selectedRecord.id === id) {
           setSelectedRecord({ ...selectedRecord, adminNotes: notes });
         }
-        showNotification('Notes saved');
+        showNotification('Notes saved to Cloud Firestore');
       }
     } catch (err) {
       console.error('Failed to update notes:', err);
@@ -144,7 +146,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       if (data.success) {
         fetchRecords();
         fetchStats();
-        showNotification('Sample data populated successfully');
+        showNotification('Sample data populated in Cloud Firestore');
       }
     } catch (err) {
       console.error('Failed to seed:', err);
@@ -158,7 +160,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const exportCSV = () => {
     if (records.length === 0) return;
-    const headers = ['ID', 'Type', 'Student Name', 'Parent Name', 'Age', 'Country', 'WhatsApp', 'Email', 'Course', 'Timing', 'Gender Pref', 'Status', 'Date Submitted', 'Message'];
+    const headers = ['ID', 'Type', 'Student Name', 'Parent Name', 'Age', 'Country', 'WhatsApp', 'Email', 'Course', 'Timing', 'Gender Pref', 'Status', 'Is Demo', 'Date Submitted', 'Message'];
     const rows = records.map(r => [
       r.id,
       r.type,
@@ -172,6 +174,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       `"${r.timing}"`,
       `"${r.genderPreference || 'Any'}"`,
       r.status,
+      r.isDemo ? 'Yes (Demo)' : 'No (Live)',
       `"${new Date(r.createdAt).toLocaleString()}"`,
       `"${(r.message || '').replace(/"/g, '""')}"`
     ]);
@@ -220,7 +223,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <h2 className="text-lg sm:text-xl font-bold font-cinzel text-white flex items-center gap-2">
                 <span>Admissions & Inquiries Database</span>
                 <span className="text-xs px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-mono">
-                  Admin Dashboard
+                  Cloud Firestore Production
                 </span>
               </h2>
             </div>
@@ -357,7 +360,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <button
                   onClick={fetchRecords}
                   className="p-2 text-slate-300 hover:text-white bg-slate-800/80 rounded-lg hover:bg-slate-700 transition-colors"
-                  title="Refresh Database Records"
+                  title="Refresh Database Records from Cloud Firestore"
                 >
                   <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 </button>
@@ -372,7 +375,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <button
                   onClick={handleSeedRecords}
                   className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-slate-400 hover:text-slate-200 border border-slate-800 rounded-lg"
-                  title="Restore Sample Data"
+                  title="Restore Sample Data in Cloud Firestore"
                 >
                   <span>Re-seed Demo</span>
                 </button>
@@ -417,7 +420,19 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                           <tr key={r.id} className="hover:bg-slate-800/40 transition-colors">
                             {/* Student */}
                             <td className="py-3 px-4">
-                              <div className="font-semibold text-white font-cinzel">{r.studentName}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-white font-cinzel">{r.studentName}</span>
+                                {r.isDemo ? (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-400 font-mono">
+                                    DEMO
+                                  </span>
+                                ) : (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-500/40 text-emerald-300 font-mono flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    LIVE
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-[11px] text-slate-400">
                                 Parent: {r.parentName || 'N/A'} {r.age ? `· Age ${r.age}` : ''} · {r.country}
                               </div>
@@ -539,7 +554,14 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <div className="relative w-full max-w-xl bg-gradient-to-b from-[#06292b] to-[#021319] border border-[#D4AF37]/50 rounded-2xl shadow-2xl p-6 text-slate-100 space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                     <div>
-                      <span className="text-[10px] uppercase font-cinzel text-[#D4AF37]">Application Details</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-cinzel text-[#D4AF37]">Application Details</span>
+                        {selectedRecord.isDemo ? (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">DEMO RECORD</span>
+                        ) : (
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 font-mono border border-emerald-500/40">REAL SUBMISSION</span>
+                        )}
+                      </div>
                       <h3 className="text-lg font-bold font-cinzel text-white">{selectedRecord.studentName}</h3>
                     </div>
                     <button
@@ -631,7 +653,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         {/* Modal Footer */}
         <div className="p-4 border-t border-[#D4AF37]/20 bg-[#021017] flex items-center justify-between text-xs text-slate-400">
-          <span>Faizan-e-Mustafa Online Academy Management Portal</span>
+          <span>Faizan-e-Mustafa Online Academy Management Portal (Backed by Cloud Firestore)</span>
           <button
             onClick={() => setIsAuthenticated(false)}
             className="flex items-center gap-1 text-slate-400 hover:text-[#D4AF37]"

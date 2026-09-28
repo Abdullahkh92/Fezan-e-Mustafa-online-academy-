@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    match /inquiries/{inquiryId} {
+      allow get, update, delete: if isValidId(inquiryId);
+      allow create: if isValidId(inquiryId) && request.resource.data.studentName is string && request.resource.data.whatsapp is string;
+      allow list: if true;
+    }
+
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

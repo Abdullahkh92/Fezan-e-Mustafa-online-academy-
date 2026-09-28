@@ -18,6 +18,7 @@ export interface InquiryRecord {
   status: SubmissionStatus;
   createdAt: string;
   adminNotes?: string;
+  isDemo?: boolean;
 }
 
 export interface CourseDetail {
