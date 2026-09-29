@@ -1,23 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { InquiryRecord, SubmissionStatus, SubmissionType } from '../types/academy';
+import React, { useState, useEffect, useCallback } from 'react';
+import { InquiryRecord, SubmissionStatus } from '../types/academy';
 import {
   X,
   Search,
   RefreshCw,
   Trash2,
   CheckCircle,
-  Clock,
-  User,
-  Phone,
   FileSpreadsheet,
   Lock,
-  Unlock,
+  LogOut,
   Eye,
+  EyeOff,
   MessageCircle,
   Sparkles,
-  Filter,
-  CloudCheck,
-  ShieldAlert
+  Shield,
+  KeyRound,
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
 
 interface Props {
@@ -25,11 +24,19 @@ interface Props {
   onClose: () => void;
 }
 
-export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
+const TOKEN_STORAGE_KEY = 'faizan_academy_admin_token';
 
+export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
+  // Session & Auth state
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [adminUsername, setAdminUsername] = useState<string>('admin');
+  const [adminPassword, setAdminPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+
+  // Data state
   const [records, setRecords] = useState<InquiryRecord[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -37,18 +44,30 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [statusFilter, setStatusFilter] = useState<string>('All');
   const [typeFilter, setTypeFilter] = useState<string>('All');
 
+  // UI state
   const [selectedRecord, setSelectedRecord] = useState<InquiryRecord | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (isOpen && isAuthenticated) {
-      fetchRecords();
-      fetchStats();
-    }
-  }, [isOpen, isAuthenticated, statusFilter, typeFilter]);
+  // Helper: Get Authorization header
+  const getAuthHeaders = useCallback((customToken?: string): HeadersInit => {
+    const token = customToken || authToken || sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }, [authToken]);
 
-  const fetchRecords = async () => {
+  // Handle unauthorized response (401/403)
+  const handleUnauthorized = useCallback((message = 'Session expired. Please log in again.') => {
+    sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    setAuthToken(null);
+    setIsAuthenticated(false);
+    setRecords([]);
+    setStats(null);
+    setSelectedRecord(null);
+    setLoginError(message);
+  }, []);
+
+  // Fetch inquiries from server with authentication
+  const fetchRecords = useCallback(async (tokenToUse?: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -56,35 +75,161 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       if (statusFilter !== 'All') params.append('status', statusFilter);
       if (typeFilter !== 'All') params.append('type', typeFilter);
 
-      const res = await fetch(`/api/admin/inquiries?${params.toString()}`);
+      const res = await fetch(`/api/admin/inquiries?${params.toString()}`, {
+        headers: getAuthHeaders(tokenToUse)
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         setRecords(data.records);
       }
     } catch (err) {
-      console.error('Error fetching records:', err);
+      console.error('Error fetching admin records:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, statusFilter, typeFilter, getAuthHeaders, handleUnauthorized]);
 
-  const fetchStats = async () => {
+  // Fetch stats from server with authentication
+  const fetchStats = useCallback(async (tokenToUse?: string) => {
     try {
-      const res = await fetch('/api/admin/stats');
+      const res = await fetch('/api/admin/stats', {
+        headers: getAuthHeaders(tokenToUse)
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       setStats(data);
     } catch (err) {
       console.error('Error fetching stats:', err);
     }
+  }, [getAuthHeaders, handleUnauthorized]);
+
+  // Validate existing stored session when opening the modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const storedToken = sessionStorage.getItem(TOKEN_STORAGE_KEY);
+    if (!storedToken) {
+      setIsAuthenticated(false);
+      setAuthToken(null);
+      return;
+    }
+
+    // Verify token with backend
+    fetch('/api/admin/session', {
+      headers: { 'Authorization': `Bearer ${storedToken}` }
+    })
+      .then((res) => {
+        if (res.ok) {
+          setAuthToken(storedToken);
+          setIsAuthenticated(true);
+          setLoginError(null);
+          fetchRecords(storedToken);
+          fetchStats(storedToken);
+        } else {
+          handleUnauthorized();
+        }
+      })
+      .catch(() => {
+        handleUnauthorized();
+      });
+  }, [isOpen, fetchRecords, fetchStats, handleUnauthorized]);
+
+  // Re-fetch records when filters change (only if authenticated)
+  useEffect(() => {
+    if (isOpen && isAuthenticated) {
+      fetchRecords();
+    }
+  }, [isOpen, isAuthenticated, statusFilter, typeFilter, fetchRecords]);
+
+  // Handle Admin Login submission
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError(null);
+
+    if (!adminUsername.trim() || !adminPassword.trim()) {
+      setLoginError('Please enter both username and password.');
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: adminUsername.trim(),
+          password: adminPassword.trim()
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setLoginError(data.error || 'Authentication failed. Please verify your credentials.');
+        return;
+      }
+
+      const token = data.token;
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
+      setAuthToken(token);
+      setIsAuthenticated(true);
+      setAdminPassword('');
+      setLoginError(null);
+      showNotification('Administrator authenticated successfully');
+
+      // Load records and stats
+      fetchRecords(token);
+      fetchStats(token);
+    } catch (err) {
+      setLoginError('Connection error. Please check your network and retry.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
+  // Handle Admin Logout
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      handleUnauthorized('Logged out successfully.');
+      showNotification('Administrator logged out');
+    }
+  };
+
+  // Change record status
   const handleStatusChange = async (id: string, newStatus: SubmissionStatus) => {
     try {
       const res = await fetch(`/api/admin/inquiries/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ status: newStatus })
       });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         setRecords(prev => prev.map(r => (r.id === id ? { ...r, status: newStatus } : r)));
@@ -99,11 +244,19 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
+  // Delete record
   const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/admin/inquiries/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: getAuthHeaders()
       });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         setRecords(prev => prev.filter(r => r.id !== id));
@@ -112,36 +265,56 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
         }
         setDeleteConfirmId(null);
         fetchStats();
-        showNotification('Record deleted from Cloud Firestore');
+        showNotification('Record permanently deleted from Cloud Firestore');
       }
     } catch (err) {
       console.error('Failed to delete:', err);
     }
   };
 
+  // Update administrative notes
   const handleUpdateNotes = async (id: string, notes: string) => {
     try {
       const res = await fetch(`/api/admin/inquiries/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders()
+        },
         body: JSON.stringify({ adminNotes: notes })
       });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         setRecords(prev => prev.map(r => (r.id === id ? { ...r, adminNotes: notes } : r)));
         if (selectedRecord && selectedRecord.id === id) {
           setSelectedRecord({ ...selectedRecord, adminNotes: notes });
         }
-        showNotification('Notes saved to Cloud Firestore');
+        showNotification('Follow-up notes saved to Cloud Firestore');
       }
     } catch (err) {
       console.error('Failed to update notes:', err);
     }
   };
 
+  // Seed sample records
   const handleSeedRecords = async () => {
     try {
-      const res = await fetch('/api/admin/seed', { method: 'POST' });
+      const res = await fetch('/api/admin/seed', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
       const data = await res.json();
       if (data.success) {
         fetchRecords();
@@ -158,24 +331,30 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
     setTimeout(() => setActionMessage(null), 3500);
   };
 
+  // Export CSV
   const exportCSV = () => {
     if (records.length === 0) return;
-    const headers = ['ID', 'Type', 'Student Name', 'Parent Name', 'Age', 'Country', 'WhatsApp', 'Email', 'Course', 'Timing', 'Gender Pref', 'Status', 'Is Demo', 'Date Submitted', 'Message'];
+    const headers = [
+      'ID', 'Type', 'Student Name', 'Parent Name', 'Age', 'Country',
+      'WhatsApp', 'Email', 'Course', 'Timing', 'Gender Pref', 'Status',
+      'Is Demo', 'Date Submitted', 'Admin Notes', 'Message'
+    ];
     const rows = records.map(r => [
       r.id,
       r.type,
-      `"${r.studentName}"`,
-      `"${r.parentName}"`,
+      `"${(r.studentName || '').replace(/"/g, '""')}"`,
+      `"${(r.parentName || '').replace(/"/g, '""')}"`,
       r.age,
-      `"${r.country}"`,
-      `"${r.whatsapp}"`,
-      `"${r.email}"`,
-      `"${r.course}"`,
-      `"${r.timing}"`,
+      `"${(r.country || '').replace(/"/g, '""')}"`,
+      `"${(r.whatsapp || '').replace(/"/g, '""')}"`,
+      `"${(r.email || '').replace(/"/g, '""')}"`,
+      `"${(r.course || '').replace(/"/g, '""')}"`,
+      `"${(r.timing || '').replace(/"/g, '""')}"`,
       `"${r.genderPreference || 'Any'}"`,
       r.status,
       r.isDemo ? 'Yes (Demo)' : 'No (Live)',
       `"${new Date(r.createdAt).toLocaleString()}"`,
+      `"${(r.adminNotes || '').replace(/"/g, '""')}"`,
       `"${(r.message || '').replace(/"/g, '""')}"`
     ]);
 
@@ -187,16 +366,6 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pinInput === 'admin123' || pinInput.length >= 4) {
-      setIsAuthenticated(true);
-      setPinError(false);
-    } else {
-      setPinError(true);
-    }
   };
 
   if (!isOpen) return null;
@@ -214,22 +383,36 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <div className="p-4 sm:p-6 border-b border-[#D4AF37]/20 flex items-center justify-between bg-[#021116]/80">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-900 to-[#03151E] border border-[#D4AF37]/50 flex items-center justify-center text-[#F9E79F]">
-              <Sparkles className="w-5 h-5 text-[#D4AF37]" />
+              <Shield className="w-5 h-5 text-[#D4AF37]" />
             </div>
             <div>
               <div className="text-xs uppercase tracking-widest text-[#D4AF37] font-semibold font-cinzel">
                 Faizan-e-Mustafa Online Academy
               </div>
               <h2 className="text-lg sm:text-xl font-bold font-cinzel text-white flex items-center gap-2">
-                <span>Admissions & Inquiries Database</span>
-                <span className="text-xs px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 font-mono">
-                  Cloud Firestore Production
+                <span>Administrative Portal</span>
+                <span className={`text-xs px-2 py-0.5 rounded font-mono border ${
+                  isAuthenticated
+                    ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300'
+                    : 'bg-amber-950/80 border-amber-500/40 text-amber-300'
+                }`}>
+                  {isAuthenticated ? 'Authenticated Session' : 'Protected Area'}
                 </span>
               </h2>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <button
+                onClick={handleLogout}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-300 hover:text-white bg-red-950/50 hover:bg-red-900/60 border border-red-500/30 rounded-lg transition-colors cursor-pointer"
+                title="Log Out of Admin Session"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Log Out</span>
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 text-slate-400 hover:text-white rounded-lg bg-black/40 hover:bg-black/60 transition-colors"
@@ -248,35 +431,93 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </div>
         )}
 
-        {/* Authentication Gate (if locked) */}
+        {/* SECURE ADMIN LOGIN VIEW (Displayed when unauthenticated) */}
         {!isAuthenticated ? (
-          <div className="p-10 flex flex-col items-center justify-center my-auto text-center space-y-4">
-            <div className="w-14 h-14 rounded-full bg-emerald-950 border border-emerald-500/40 flex items-center justify-center text-[#D4AF37]">
-              <Lock className="w-7 h-7" />
+          <div className="p-8 sm:p-12 flex flex-col items-center justify-center my-auto text-center max-w-md mx-auto w-full">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-900/80 via-teal-950 to-[#021319] border-2 border-[#D4AF37]/50 flex items-center justify-center text-[#F9E79F] mb-4 shadow-xl shadow-[#D4AF37]/10">
+              <Lock className="w-8 h-8 text-[#D4AF37]" />
             </div>
-            <h3 className="text-xl font-bold font-cinzel text-white">Administrator Access Verification</h3>
-            <p className="text-xs text-slate-400 max-w-sm">
-              Please enter the administrator passcode to access live admission records and confidential student data.
+
+            <h3 className="text-2xl font-bold font-cinzel text-white mb-1">
+              Admin Authentication
+            </h3>
+            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+              Student admission records and inquiries are encrypted and protected. Please sign in with authorized administrator credentials.
             </p>
-            <form onSubmit={handlePinSubmit} className="space-y-3 w-full max-w-xs">
-              <input
-                type="password"
-                placeholder="Enter Passcode (default: admin123)"
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#021319] border border-slate-700 text-white text-sm text-center focus:outline-none focus:border-[#D4AF37]"
-              />
-              {pinError && <p className="text-xs text-red-400">Invalid passcode. Default passcode is admin123</p>}
+
+            {loginError && (
+              <div className="w-full mb-5 p-3.5 rounded-xl bg-red-950/70 border border-red-500/40 text-red-200 text-xs flex items-start gap-2.5 text-left">
+                <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+                <span>{loginError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleLoginSubmit} className="w-full space-y-4 text-left">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 font-cinzel mb-1.5">
+                  Administrator Username
+                </label>
+                <input
+                  type="text"
+                  required
+                  autoComplete="username"
+                  placeholder="admin"
+                  value={adminUsername}
+                  onChange={(e) => setAdminUsername(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl bg-[#021319] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 font-cinzel mb-1.5">
+                  Secret Passcode / Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="current-password"
+                    placeholder="Enter administrator password"
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    className="w-full px-4 py-2.5 pr-10 rounded-xl bg-[#021319] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
               <button
                 type="submit"
-                className="w-full py-2.5 text-xs font-bold text-slate-950 bg-gradient-to-r from-[#F9E79F] to-[#D4AF37] rounded-xl font-cinzel"
+                disabled={isLoggingIn}
+                className="w-full py-3 px-4 text-xs font-bold text-slate-950 bg-gradient-to-r from-[#F9E79F] via-[#D4AF37] to-[#AA771C] hover:brightness-110 disabled:opacity-50 rounded-xl shadow-lg shadow-[#D4AF37]/20 transition-all font-cinzel flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wider mt-2"
               >
-                Unlock Dashboard
+                {isLoggingIn ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-950" />
+                    <span>Verifying Credentials...</span>
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4 text-slate-950" />
+                    <span>Sign In to Dashboard</span>
+                  </>
+                )}
               </button>
             </form>
+
+            <div className="mt-6 pt-4 border-t border-slate-800 text-[11px] text-slate-500 w-full">
+              <span>Faizan-e-Mustafa Online Academy Cloud Security Gate</span>
+            </div>
           </div>
         ) : (
-          /* Authenticated Dashboard Content */
+          /* AUTHENTICATED DASHBOARD VIEW */
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             
             {/* Stats Overview */}
@@ -358,7 +599,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
               {/* Utility actions */}
               <div className="flex items-center gap-2">
                 <button
-                  onClick={fetchRecords}
+                  onClick={() => fetchRecords()}
                   className="p-2 text-slate-300 hover:text-white bg-slate-800/80 rounded-lg hover:bg-slate-700 transition-colors"
                   title="Refresh Database Records from Cloud Firestore"
                 >
@@ -653,14 +894,16 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
         {/* Modal Footer */}
         <div className="p-4 border-t border-[#D4AF37]/20 bg-[#021017] flex items-center justify-between text-xs text-slate-400">
-          <span>Faizan-e-Mustafa Online Academy Management Portal (Backed by Cloud Firestore)</span>
-          <button
-            onClick={() => setIsAuthenticated(false)}
-            className="flex items-center gap-1 text-slate-400 hover:text-[#D4AF37]"
-          >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Lock Session</span>
-          </button>
+          <span>Faizan-e-Mustafa Online Academy Portal</span>
+          {isAuthenticated && (
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Log Out Administrator</span>
+            </button>
+          )}
         </div>
 
       </div>

@@ -10,6 +10,15 @@ import {
   seedDemoRecordsIfEmpty,
   InquiryDocument
 } from './src/server/firestoreService.ts';
+import {
+  validateCredentials,
+  createAdminToken,
+  revokeSessionToken,
+  requireAdminAuth,
+  checkRateLimit,
+  recordLoginAttempt,
+  AuthenticatedRequest
+} from './src/server/auth.ts';
 
 dotenv.config();
 
@@ -102,10 +111,17 @@ seedDemoRecordsIfEmpty(initialSeedRecords).catch((err) => {
   console.error('[Startup] Failed to check/seed Firestore:', err);
 });
 
-// REST API Endpoints with Real Cloud Firestore Persistence
+// =========================================================================
+// PUBLIC ENDPOINTS (No Authentication Required)
+// =========================================================================
 
-// 1. Submit form (Free Trial, Admission, Contact, Inquiry)
-// STRICT REQUIREMENT: Only return HTTP 201 after record is confirmed written to Firestore. If write fails, throw HTTP 500.
+/**
+ * 1. Submit form (Free Trial, Admission, Contact, Inquiry)
+ * STRICT PRIVACY REQUIREMENT:
+ * - Publicly accessible for new prospective students.
+ * - Only returns an acknowledgment with the student's own reference ID.
+ * - NEVER returns the full inquiry list or any other student's records.
+ */
 app.post('/api/inquiries', async (req: Request, res: Response) => {
   try {
     const {
@@ -143,31 +159,130 @@ app.post('/api/inquiries', async (req: Request, res: Response) => {
       message: (message || '').trim(),
       status: 'New',
       createdAt: new Date().toISOString(),
-      isDemo: false // Real production user submission
+      isDemo: false // Real production student submission
     };
 
-    // Await actual Cloud Firestore persistence.
-    // If Firebase write fails or network disconnects, this throws and jumps directly to catch block.
+    // Await actual Cloud Firestore persistence
     await createInquiryInFirestore(newRecord);
 
     console.log(`[Firestore] Successfully persisted inquiry ${newRecord.id} to Cloud Firestore.`);
 
+    // Return ONLY privacy-safe confirmation metadata for this submission
     return res.status(201).json({
       success: true,
       message: 'Your application has been received successfully! Our academic coordinator will contact you on WhatsApp shortly.',
-      record: newRecord
+      referenceId: newRecord.id,
+      studentName: newRecord.studentName,
+      course: newRecord.course,
+      whatsapp: newRecord.whatsapp
     });
   } catch (error: any) {
     console.error('[Firestore Error] Failed to persist inquiry to Cloud Firestore:', error);
-    // Explicit HTTP 500 error returned to client so user is never misled
     return res.status(500).json({
       error: 'Database storage error: Failed to save application to cloud database. Please try again or contact us directly on WhatsApp.'
     });
   }
 });
 
-// 2. Admin: Get all inquiries with search & filter from Cloud Firestore
-app.get('/api/admin/inquiries', async (req: Request, res: Response) => {
+// =========================================================================
+// ADMIN AUTHENTICATION ENDPOINTS
+// =========================================================================
+
+/**
+ * Admin Login
+ * Authenticates administrator credentials and issues a secure cryptographically signed session token.
+ */
+app.post('/api/admin/login', (req: Request, res: Response) => {
+  const ip = req.ip || req.socket.remoteAddress || 'unknown';
+  const { allowed, waitSeconds } = checkRateLimit(ip);
+
+  if (!allowed) {
+    return res.status(429).json({
+      error: `Too many failed login attempts. Please wait ${waitSeconds} seconds before trying again.`,
+      code: 'RATE_LIMITED'
+    });
+  }
+
+  const { username, password } = req.body;
+
+  if (!username || !password) {
+    recordLoginAttempt(ip, false);
+    return res.status(400).json({ error: 'Username and password are required' });
+  }
+
+  const isValid = validateCredentials(username, password);
+
+  if (!isValid) {
+    recordLoginAttempt(ip, false);
+    return res.status(401).json({
+      error: 'Invalid administrator credentials. Access denied.',
+      code: 'INVALID_CREDENTIALS'
+    });
+  }
+
+  recordLoginAttempt(ip, true);
+  const token = createAdminToken(username.trim());
+
+  // Set secure HTTP-only cookie
+  res.cookie('admin_session', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  });
+
+  return res.json({
+    success: true,
+    message: 'Admin authentication successful',
+    token,
+    user: {
+      username: username.trim(),
+      role: 'admin'
+    }
+  });
+});
+
+/**
+ * Admin Logout
+ * Invalidates the session token on the server and clears the session cookie.
+ */
+app.post('/api/admin/logout', (req: Request, res: Response) => {
+  let token: string | undefined;
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7).trim();
+  }
+  if (!token && req.headers.cookie) {
+    const match = req.headers.cookie.match(/admin_session=([^;]+)/);
+    if (match) token = match[1].trim();
+  }
+
+  if (token) {
+    revokeSessionToken(token);
+  }
+
+  res.clearCookie('admin_session');
+  return res.json({ success: true, message: 'Logged out successfully' });
+});
+
+/**
+ * Verify Admin Session
+ */
+app.get('/api/admin/session', requireAdminAuth, (req: AuthenticatedRequest, res: Response) => {
+  return res.json({
+    authenticated: true,
+    user: req.adminUser
+  });
+});
+
+// =========================================================================
+// PROTECTED ADMIN ENDPOINTS (Strictly requires valid admin session)
+// =========================================================================
+
+/**
+ * 2. Admin: Get all inquiries with search & filter from Cloud Firestore
+ */
+app.get('/api/admin/inquiries', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { search = '', status = 'All', type = 'All', course = 'All' } = req.query;
 
@@ -209,8 +324,10 @@ app.get('/api/admin/inquiries', async (req: Request, res: Response) => {
   }
 });
 
-// 3. Admin: Update inquiry status or notes in Cloud Firestore
-app.patch('/api/admin/inquiries/:id', async (req: Request, res: Response) => {
+/**
+ * 3. Admin: Update inquiry status or notes in Cloud Firestore
+ */
+app.patch('/api/admin/inquiries/:id', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status, adminNotes } = req.body;
@@ -236,8 +353,10 @@ app.patch('/api/admin/inquiries/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 4. Admin: Delete inquiry from Cloud Firestore
-app.delete('/api/admin/inquiries/:id', async (req: Request, res: Response) => {
+/**
+ * 4. Admin: Delete inquiry from Cloud Firestore
+ */
+app.delete('/api/admin/inquiries/:id', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id } = req.params;
     const deleted = await deleteInquiryInFirestore(id);
@@ -256,8 +375,10 @@ app.delete('/api/admin/inquiries/:id', async (req: Request, res: Response) => {
   }
 });
 
-// 5. Admin: Aggregated stats from Cloud Firestore
-app.get('/api/admin/stats', async (_req: Request, res: Response) => {
+/**
+ * 5. Admin: Aggregated stats from Cloud Firestore
+ */
+app.get('/api/admin/stats', requireAdminAuth, async (_req: AuthenticatedRequest, res: Response) => {
   try {
     const records = await getInquiriesFromFirestore();
     const total = records.length;
@@ -286,8 +407,10 @@ app.get('/api/admin/stats', async (_req: Request, res: Response) => {
   }
 });
 
-// 6. Admin: Seed demo data if requested explicitly
-app.post('/api/admin/seed', async (_req: Request, res: Response) => {
+/**
+ * 6. Admin: Seed demo data if requested explicitly by authorized administrator
+ */
+app.post('/api/admin/seed', requireAdminAuth, async (_req: AuthenticatedRequest, res: Response) => {
   try {
     for (const record of initialSeedRecords) {
       await createInquiryInFirestore(record);
@@ -300,7 +423,9 @@ app.post('/api/admin/seed', async (_req: Request, res: Response) => {
   }
 });
 
-// Vite middleware or Static files
+// =========================================================================
+// VITE SPA MIDDLEWARE / STATIC SERVING
+// =========================================================================
 async function startServer() {
   const isProduction = process.env.NODE_ENV === 'production';
 
@@ -322,6 +447,7 @@ async function startServer() {
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Faizan-e-Mustafa Online Academy server running on http://localhost:${PORT}`);
     console.log(`Cloud Firestore integration active: Persistent database in use.`);
+    console.log(`Security: Server-side Administrator Authentication enforced.`);
   });
 }
 

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { AboutSection } from './components/AboutSection';
@@ -22,6 +22,40 @@ export default function App() {
   const [selectedCourseForModal, setSelectedCourseForModal] = useState<CourseDetail | null>(null);
   const [preSelectedCourse, setPreSelectedCourse] = useState<string>('');
   const [adminModalOpen, setAdminModalOpen] = useState<boolean>(false);
+
+  // Check URL pathname or hash for direct /admin or #admin access
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/admin' || path === '/login' || hash === '#admin' || hash === '#login') {
+        setAdminModalOpen(true);
+      }
+    };
+
+    checkAdminRoute();
+    window.addEventListener('popstate', checkAdminRoute);
+    window.addEventListener('hashchange', checkAdminRoute);
+
+    return () => {
+      window.removeEventListener('popstate', checkAdminRoute);
+      window.removeEventListener('hashchange', checkAdminRoute);
+    };
+  }, []);
+
+  const handleOpenAdmin = () => {
+    setAdminModalOpen(true);
+    if (window.location.pathname !== '/admin') {
+      window.history.pushState(null, '', '/admin');
+    }
+  };
+
+  const handleCloseAdmin = () => {
+    setAdminModalOpen(false);
+    if (window.location.pathname === '/admin' || window.location.pathname === '/login') {
+      window.history.pushState(null, '', '/');
+    }
+  };
 
   const handleStartLearning = () => {
     const el = document.getElementById('admission');
@@ -50,7 +84,7 @@ export default function App() {
       {/* 3-Zone Top Bar Navigation */}
       <Navbar
         onOpenTrial={handleStartLearning}
-        onOpenAdmin={() => setAdminModalOpen(true)}
+        onOpenAdmin={handleOpenAdmin}
       />
 
       {/* Main Content Area */}
@@ -87,7 +121,7 @@ export default function App() {
 
       {/* Footer */}
       <Footer
-        onOpenAdmin={() => setAdminModalOpen(true)}
+        onOpenAdmin={handleOpenAdmin}
         onOpenTrial={handleStartLearning}
       />
 
@@ -101,10 +135,10 @@ export default function App() {
         onEnroll={(title) => handleEnrollCourse(title)}
       />
 
-      {/* Academy Admin Dashboard Modal */}
+      {/* Academy Admin Dashboard Modal / Secure Login Screen */}
       <AdminDashboardModal
         isOpen={adminModalOpen}
-        onClose={() => setAdminModalOpen(false)}
+        onClose={handleCloseAdmin}
       />
     </div>
   );
