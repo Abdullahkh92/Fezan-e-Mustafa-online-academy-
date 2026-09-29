@@ -11,21 +11,27 @@ import { CoursesSection } from './components/CoursesSection';
 import { OnlineClassesSection } from './components/OnlineClassesSection';
 import { WhyChooseUsSection } from './components/WhyChooseUsSection';
 import { AdmissionTrialSection } from './components/AdmissionTrialSection';
+import { FAQSection } from './components/FAQSection';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { CourseDetailModal } from './components/CourseDetailModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
 import { CourseDetail } from './types/academy';
+import { trackPageView } from './utils/visitorTracker';
 
 export default function App() {
   const [selectedCourseForModal, setSelectedCourseForModal] = useState<CourseDetail | null>(null);
   const [preSelectedCourse, setPreSelectedCourse] = useState<string>('');
   const [adminModalOpen, setAdminModalOpen] = useState<boolean>(false);
 
-  // Check URL pathname or hash for direct /admin or #admin access
+  // Initialize privacy-friendly visitor analytics & handle /admin routing
   useEffect(() => {
-    const checkAdminRoute = () => {
+    // Record page visit
+    trackPageView();
+
+    const handleRouteChange = () => {
+      trackPageView();
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
       if (path === '/admin' || path === '/login' || hash === '#admin' || hash === '#login') {
@@ -33,13 +39,13 @@ export default function App() {
       }
     };
 
-    checkAdminRoute();
-    window.addEventListener('popstate', checkAdminRoute);
-    window.addEventListener('hashchange', checkAdminRoute);
+    handleRouteChange();
+    window.addEventListener('popstate', handleRouteChange);
+    window.addEventListener('hashchange', handleRouteChange);
 
     return () => {
-      window.removeEventListener('popstate', checkAdminRoute);
-      window.removeEventListener('hashchange', checkAdminRoute);
+      window.removeEventListener('popstate', handleRouteChange);
+      window.removeEventListener('hashchange', handleRouteChange);
     };
   }, []);
 
@@ -115,7 +121,10 @@ export default function App() {
           preSelectedCourse={preSelectedCourse}
         />
 
-        {/* 7. Contact Us */}
+        {/* 7. Frequently Asked Questions (SEO & Organic User Guidance) */}
+        <FAQSection />
+
+        {/* 8. Contact Us */}
         <ContactSection />
       </main>
 

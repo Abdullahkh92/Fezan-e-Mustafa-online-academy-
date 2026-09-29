@@ -1,0 +1,16 @@
+# Robots.txt for Faizan-e-Mustafa Online Academy
+# Website: https://faizanemustafa.academy
+
+User-agent: *
+Allow: /
+Disallow: /api/admin/
+Disallow: /admin
+Disallow: /login
+
+# Allow search engine crawlers to access all public educational media and assets
+Allow: /images/
+Allow: /src/assets/images/
+Allow: /assets/
+
+# Host & Sitemap specification
+Sitemap: https://faizanemustafa.academy/sitemap.xml

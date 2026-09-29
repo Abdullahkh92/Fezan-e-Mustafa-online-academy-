@@ -2,8 +2,8 @@ import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 
 // Secure server-side administrative credentials (configurable via environment variables)
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'FaizanAdmin@2026!';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'abdullah';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'Abdullah786';
 const SESSION_SECRET = process.env.ADMIN_SESSION_SECRET || 'faizan-e-mustafa-academy-session-auth-secret-key-2026';
 
 // Session duration: 24 hours

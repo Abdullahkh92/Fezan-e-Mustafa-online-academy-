@@ -1,0 +1,73 @@
+[
+  {
+    "id": "visit_1790677576159_fbu1e",
+    "visitorId": "real_human_1790677576144",
+    "sessionId": "sid_1790677576159",
+    "timestamp": "2026-09-29T10:26:16.159Z",
+    "date": "2026-09-29",
+    "page": "/#courses",
+    "referrer": "https://www.google.com/search?q=online+quran+academy",
+    "deviceType": "Desktop",
+    "browser": "Chrome",
+    "os": "Windows",
+    "country": "International",
+    "isNewVisitor": true,
+    "trafficSource": "Organic Search"
+  },
+  {
+    "id": "visit_1790677251289_5ibpa",
+    "visitorId": "fma_vid_lupf96mt_mumizsj3",
+    "sessionId": "fma_sid_o8b68w84_mumizsj4",
+    "timestamp": "2026-09-29T10:20:51.289Z",
+    "date": "2026-09-29",
+    "page": "/#hero",
+    "referrer": "aistudio.google.com",
+    "deviceType": "Mobile",
+    "browser": "Chrome",
+    "os": "Android",
+    "country": "International",
+    "isNewVisitor": false
+  },
+  {
+    "id": "visit_1790677248331_hmnme",
+    "visitorId": "fma_vid_lupf96mt_mumizsj3",
+    "sessionId": "fma_sid_o8b68w84_mumizsj4",
+    "timestamp": "2026-09-29T10:20:48.331Z",
+    "date": "2026-09-29",
+    "page": "/#hero",
+    "referrer": "aistudio.google.com",
+    "deviceType": "Mobile",
+    "browser": "Chrome",
+    "os": "Android",
+    "country": "International",
+    "isNewVisitor": false
+  },
+  {
+    "id": "visit_1790677239290_pszrh",
+    "visitorId": "fma_vid_lupf96mt_mumizsj3",
+    "sessionId": "fma_sid_o8b68w84_mumizsj4",
+    "timestamp": "2026-09-29T10:20:39.290Z",
+    "date": "2026-09-29",
+    "page": "/#hero",
+    "referrer": "aistudio.google.com",
+    "deviceType": "Mobile",
+    "browser": "Chrome",
+    "os": "Android",
+    "country": "International",
+    "isNewVisitor": true
+  },
+  {
+    "id": "visit_1790675630097_d6h1n",
+    "visitorId": "test_user_1790675630084",
+    "sessionId": "sid_1790675630097",
+    "timestamp": "2026-09-29T09:53:50.097Z",
+    "date": "2026-09-29",
+    "page": "/#courses",
+    "referrer": "Direct",
+    "deviceType": "Desktop",
+    "browser": "Chrome",
+    "os": "Windows",
+    "country": "International",
+    "isNewVisitor": true
+  }
+]

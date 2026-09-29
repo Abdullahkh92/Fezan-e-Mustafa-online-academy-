@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Home Page -->
+  <url>
+    <loc>https://faizanemustafa.academy/</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/hero_quran_academy_desktop_1790658869680.jpg</image:loc>
+      <image:title>Faizan-e-Mustafa Online Academy Quran Learning</image:title>
+      <image:caption>Learn Holy Quran online with certified Tajweed teachers worldwide</image:caption>
+    </image:image>
+  </url>
+
+  <!-- Courses Overview -->
+  <url>
+    <loc>https://faizanemustafa.academy/#courses</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Madni Qaida Course -->
+  <url>
+    <loc>https://faizanemustafa.academy/#courses?id=madni-qaida</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/kids_online_quran_class_1790658922111.jpg</image:loc>
+      <image:title>Madni Qaida Online Course for Beginners</image:title>
+    </image:image>
+  </url>
+
+  <!-- Quran Reading (Nazra) -->
+  <url>
+    <loc>https://faizanemustafa.academy/#courses?id=quran-reading</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/hero_quran_learning_1790595240873.jpg</image:loc>
+      <image:title>Quran Nazra Online Reading with Fluency</image:title>
+    </image:image>
+  </url>
+
+  <!-- Quran with Tajweed -->
+  <url>
+    <loc>https://faizanemustafa.academy/#courses?id=quran-tajweed</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/quran_tajweed_rehal_1790595280541.jpg</image:loc>
+      <image:title>Learn Quran with Tajweed Rules & Articulation</image:title>
+    </image:image>
+  </url>
+
+  <!-- Hifz-ul-Quran Memorization -->
+  <url>
+    <loc>https://faizanemustafa.academy/#courses?id=hifz-ul-quran</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/hifz_quran_memorization_1790658902230.jpg</image:loc>
+      <image:title>Hifz ul Quran Online Memorization Program</image:title>
+    </image:image>
+  </url>
+
+  <!-- Islamic Studies -->
+  <url>
+    <loc>https://faizanemustafa.academy/#courses?id=islamic-studies</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/islamic_architecture_heritage_1790658887112.jpg</image:loc>
+      <image:title>Basic Islamic Studies, Salah and Masnoon Duas</image:title>
+    </image:image>
+  </url>
+
+  <!-- About Section -->
+  <url>
+    <loc>https://faizanemustafa.academy/#about</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Online Classes Methodology -->
+  <url>
+    <loc>https://faizanemustafa.academy/#online-classes</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://faizanemustafa.academy/images/teacher_online_class_1790595255599.jpg</image:loc>
+      <image:title>One to One Zoom Online Quran Classes</image:title>
+    </image:image>
+  </url>
+
+  <!-- Why Choose Us -->
+  <url>
+    <loc>https://faizanemustafa.academy/#why-choose-us</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Admission & Free Trial Booking -->
+  <url>
+    <loc>https://faizanemustafa.academy/#admission</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Frequently Asked Questions -->
+  <url>
+    <loc>https://faizanemustafa.academy/#faqs</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <!-- Contact Us -->
+  <url>
+    <loc>https://faizanemustafa.academy/#contact</loc>
+    <lastmod>2026-09-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+</urlset>

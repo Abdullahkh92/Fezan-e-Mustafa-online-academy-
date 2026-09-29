@@ -57,11 +57,11 @@ export const WhyChooseUsSection: React.FC = () => {
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider font-cinzel">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/70 border border-emerald-500/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider font-cinzel shadow-sm">
             <Sparkles className="w-3.5 h-3.5 text-[#D4AF37]" />
             Why Parents Trust Us
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold font-cinzel text-white">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-cinzel text-white">
             Excellence in <span className="text-gold-gradient">Quranic Education</span>
           </h2>
           <p className="text-sm sm:text-base text-slate-300 leading-relaxed">
@@ -76,12 +76,12 @@ export const WhyChooseUsSection: React.FC = () => {
             return (
               <div
                 key={i}
-                className={`p-6 rounded-2xl bg-gradient-to-b from-[#052627]/90 via-[#031d22]/90 to-[#021319]/95 border border-[#D4AF37]/25 hover:border-[#D4AF37]/50 transition-all duration-300 shadow-lg ${
+                className={`p-6 sm:p-7 rounded-2xl bg-gradient-to-b from-[#052627]/95 via-[#031d22]/95 to-[#021319]/98 border border-[#D4AF37]/30 hover:border-[#D4AF37]/60 transition-all duration-300 shadow-xl ${
                   i === 4 ? 'md:col-span-2 lg:col-span-1' : ''
                 }`}
               >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-900/80 to-teal-950/80 border border-emerald-500/40 flex items-center justify-center text-[#F9E79F] mb-4 shadow-inner">
-                  <Icon className="w-6 h-6" />
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-900/90 to-teal-950 border border-emerald-500/50 flex items-center justify-center text-[#F9E79F] mb-4 shadow-inner">
+                  <Icon className="w-6 h-6 text-[#D4AF37]" />
                 </div>
                 <h3 className="text-lg font-bold font-cinzel text-white mb-2">
                   {pillar.title}
@@ -95,84 +95,77 @@ export const WhyChooseUsSection: React.FC = () => {
         </div>
 
         {/* Quantitative Proof Adjacency Banner */}
-        <div className="p-8 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-[#042426] to-[#021217] border border-[#D4AF37]/35 shadow-xl mb-16">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center divide-y lg:divide-y-0 lg:divide-x divide-slate-800/80">
-            <div className="pt-4 lg:pt-0">
-              <div className="text-2xl sm:text-4xl font-bold font-cinzel text-white tabular-nums">
-                1,500<span className="text-[#D4AF37]">+</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1 uppercase tracking-wider font-cinzel">
-                Students Educated
-              </p>
+        <div className="p-8 sm:p-10 rounded-3xl bg-gradient-to-r from-emerald-950/80 via-[#042426] to-[#021217] border-2 border-[#D4AF37]/40 shadow-2xl mb-16">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 text-center divide-y sm:divide-y-0 sm:divide-x divide-slate-800/90">
+            <div className="pt-4 sm:pt-0">
+              <span className="font-cinzel text-3xl sm:text-4xl lg:text-5xl font-bold text-[#F9E79F] block tracking-tight">
+                100%
+              </span>
+              <span className="text-xs sm:text-sm text-slate-300 mt-1 block font-medium">
+                One-to-One Attention
+              </span>
             </div>
-
-            <div className="pt-4 lg:pt-0">
-              <div className="text-2xl sm:text-4xl font-bold font-cinzel text-white tabular-nums">
-                25<span className="text-[#D4AF37]">+</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1 uppercase tracking-wider font-cinzel">
-                Countries Reached
-              </p>
+            <div className="pt-4 sm:pt-0 sm:pl-4">
+              <span className="font-cinzel text-3xl sm:text-4xl lg:text-5xl font-bold text-emerald-400 block tracking-tight">
+                24/7
+              </span>
+              <span className="text-xs sm:text-sm text-slate-300 mt-1 block font-medium">
+                Global Time Zones
+              </span>
             </div>
-
-            <div className="pt-4 lg:pt-0">
-              <div className="text-2xl sm:text-4xl font-bold font-cinzel text-white tabular-nums">
-                100<span className="text-[#D4AF37]">%</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1 uppercase tracking-wider font-cinzel">
-                Certified Teachers
-              </p>
+            <div className="pt-4 sm:pt-0 sm:pl-4">
+              <span className="font-cinzel text-3xl sm:text-4xl lg:text-5xl font-bold text-[#D4AF37] block tracking-tight">
+                3-Day
+              </span>
+              <span className="text-xs sm:text-sm text-slate-300 mt-1 block font-medium">
+                Free Trial Evaluation
+              </span>
             </div>
-
-            <div className="pt-4 lg:pt-0">
-              <div className="text-2xl sm:text-4xl font-bold font-cinzel text-white tabular-nums">
-                4.9<span className="text-[#D4AF37]">/5</span>
-              </div>
-              <p className="text-xs text-slate-300 mt-1 uppercase tracking-wider font-cinzel">
-                Parent Satisfaction
-              </p>
+            <div className="pt-4 sm:pt-0 sm:pl-4">
+              <span className="font-cinzel text-3xl sm:text-4xl lg:text-5xl font-bold text-teal-300 block tracking-tight">
+                Both
+              </span>
+              <span className="text-xs sm:text-sm text-slate-300 mt-1 block font-medium">
+                Male & Female Scholars
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Testimonials */}
-        <div className="space-y-6">
-          <div className="text-center">
-            <h3 className="text-xl sm:text-2xl font-bold font-cinzel text-white">
-              Words from <span className="text-gold-gradient">Our Community</span>
+        {/* Parent Testimonials Section */}
+        <div>
+          <div className="text-center mb-8">
+            <h3 className="text-2xl sm:text-3xl font-bold font-cinzel text-white">
+              Words from <span className="text-gold-gradient">Our Student Families</span>
             </h3>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
-              Real parents and students experiencing life-changing Quranic growth
+            <p className="text-xs sm:text-sm text-slate-300 mt-1">
+              Real feedback from parents across the UK, USA, Canada, and beyond
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {testimonials.map((t, i) => (
+            {testimonials.map((t, idx) => (
               <div
-                key={i}
-                className="p-6 rounded-2xl bg-[#031c22]/70 border border-emerald-500/20 flex flex-col justify-between space-y-4"
+                key={idx}
+                className="p-6 rounded-2xl bg-[#031c22]/90 border border-slate-700/80 hover:border-[#D4AF37]/50 transition-colors shadow-lg flex flex-col justify-between space-y-4"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <div className="flex text-[#D4AF37]">
-                      {[...Array(5)].map((_, s) => (
-                        <Star key={s} className="w-3.5 h-3.5 fill-[#D4AF37]" />
+                    <div className="flex items-center gap-1 text-[#D4AF37]">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-4 h-4 fill-[#D4AF37] text-[#D4AF37]" />
                       ))}
                     </div>
-                    <Quote className="w-5 h-5 text-emerald-500/40" />
+                    <Quote className="w-6 h-6 text-emerald-500/30" />
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-200 italic leading-relaxed">
-                    "{t.quote}"
+                  <p className="text-xs sm:text-sm text-slate-200 leading-relaxed italic">
+                    &ldquo;{t.quote}&rdquo;
                   </p>
                 </div>
 
-                <div className="pt-3 border-t border-slate-800/80">
-                  <div className="text-sm font-bold font-cinzel text-white">
-                    {t.name}
-                  </div>
-                  <div className="text-xs text-slate-400 mt-0.5">
-                    {t.location} <span aria-hidden="true">·</span> <span className="text-[#D4AF37]">{t.course}</span>
-                  </div>
+                <div className="pt-3 border-t border-slate-800">
+                  <p className="text-sm font-bold text-white font-cinzel">{t.name}</p>
+                  <p className="text-[11px] text-[#D4AF37] mt-0.5">{t.course} · {t.location}</p>
                 </div>
               </div>
             ))}

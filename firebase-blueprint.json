@@ -73,12 +73,73 @@
         }
       },
       "required": ["studentName", "whatsapp", "status", "createdAt"]
+    },
+    "TrafficVisit": {
+      "title": "Website Traffic Visit",
+      "description": "Anonymous analytics visit event recorded for website usage and visitor trend tracking",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique event identifier"
+        },
+        "visitorId": {
+          "type": "string",
+          "description": "Anonymous unique visitor identifier"
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "Anonymous session identifier"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO 8601 timestamp"
+        },
+        "date": {
+          "type": "string",
+          "description": "YYYY-MM-DD date"
+        },
+        "page": {
+          "type": "string",
+          "description": "Visited route or page section"
+        },
+        "referrer": {
+          "type": "string",
+          "description": "Referrer source or direct"
+        },
+        "deviceType": {
+          "type": "string",
+          "enum": ["Desktop", "Mobile", "Tablet"],
+          "description": "Detected device category"
+        },
+        "browser": {
+          "type": "string",
+          "description": "Browser name"
+        },
+        "os": {
+          "type": "string",
+          "description": "Operating system"
+        },
+        "country": {
+          "type": "string",
+          "description": "Country if detected"
+        },
+        "isNewVisitor": {
+          "type": "boolean",
+          "description": "Whether this visit was the visitor's first recorded visit"
+        }
+      },
+      "required": ["id", "visitorId", "timestamp", "date", "page"]
     }
   },
   "firestore": {
     "/inquiries/{inquiryId}": {
       "schema": "Inquiry",
       "description": "Collection of all academy student admissions, trial requests, and inquiries"
+    },
+    "/traffic_visits/{visitId}": {
+      "schema": "TrafficVisit",
+      "description": "Collection of recorded anonymous visitor traffic logs for admin analytics"
     }
   }
 }

@@ -6,9 +6,17 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128;
     }
 
+    // Academy Inquiries & Admissions
     match /inquiries/{inquiryId} {
       allow get, update, delete: if isValidId(inquiryId);
       allow create: if isValidId(inquiryId) && request.resource.data.studentName is string && request.resource.data.whatsapp is string;
+      allow list: if true;
+    }
+
+    // Website Visitor Traffic Analytics
+    match /traffic_visits/{visitId} {
+      allow get, update, delete: if isValidId(visitId);
+      allow create: if isValidId(visitId) && request.resource.data.visitorId is string && request.resource.data.page is string;
       allow list: if true;
     }
 

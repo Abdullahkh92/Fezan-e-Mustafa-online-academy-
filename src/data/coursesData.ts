@@ -10,7 +10,7 @@ export const COURSES_DATA: CourseDetail[] = [
     duration: '2 to 3 Months',
     level: 'Beginner / Zero Foundation',
     suitableFor: 'Children (4+ years) & Adult Beginners',
-    image: '/src/assets/images/girl_student_tablet_1790595268013.jpg',
+    image: '/images/kids_online_quran_class_1790658922111.jpg',
     keyTopics: [
       'Identification of 29 Arabic Alphabets',
       'Accurate Makharij (origin points of each letter)',
@@ -42,7 +42,7 @@ export const COURSES_DATA: CourseDetail[] = [
     duration: '6 to 12 Months',
     level: 'Elementary to Intermediate',
     suitableFor: 'Kids, Youths & Adults',
-    image: '/src/assets/images/hero_quran_learning_1790595240873.jpg',
+    image: '/images/hero_quran_learning_1790595240873.jpg',
     keyTopics: [
       'Smooth sentence construction and continuous recitation',
       'Applying basic stopping signs (Waqf, Sakta, Qif)',
@@ -73,7 +73,7 @@ export const COURSES_DATA: CourseDetail[] = [
     duration: '4 to 6 Months',
     level: 'Intermediate to Advanced',
     suitableFor: 'All Age Groups desiring Tajweed Mastery',
-    image: '/src/assets/images/quran_tajweed_rehal_1790595280541.jpg',
+    image: '/images/quran_tajweed_rehal_1790595280541.jpg',
     keyTopics: [
       'Deep dive into Makharij al-Huroof (17 specific throat/mouth points)',
       'Sifat al-Huroof (Characteristics: Hams, Jahr, Isti\'la, Qalqalah)',
@@ -104,7 +104,7 @@ export const COURSES_DATA: CourseDetail[] = [
     duration: '2 to 3 Years (Full Hifz) or Custom for Short Surahs',
     level: 'Dedicated Students',
     suitableFor: 'Committed Children, Teens & Adults',
-    image: '/src/assets/images/teacher_online_class_1790595255599.jpg',
+    image: '/images/hifz_quran_memorization_1790658902230.jpg',
     keyTopics: [
       'Structured daily memorization target (1 to 2 pages or custom)',
       'The 3-stage memory technique (Sabaq, Sabqi, Manzil)',
@@ -135,7 +135,7 @@ export const COURSES_DATA: CourseDetail[] = [
     duration: '3 to 6 Months',
     level: 'All Levels',
     suitableFor: 'Children, Youths & Reverts / Adults',
-    image: '/src/assets/images/girl_student_tablet_1790595268013.jpg',
+    image: '/images/islamic_architecture_heritage_1790658887112.jpg',
     keyTopics: [
       'Wudu, Ghusl, and purification fundamentals',
       'Practical prayer (Salah) step-by-step with translation',

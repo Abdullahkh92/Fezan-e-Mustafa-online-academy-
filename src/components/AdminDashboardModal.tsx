@@ -16,8 +16,11 @@ import {
   Shield,
   KeyRound,
   AlertTriangle,
-  Loader2
+  Loader2,
+  TrendingUp,
+  BarChart3
 } from 'lucide-react';
+import { TrafficAnalyticsView, TrafficStatsData } from './TrafficAnalyticsView';
 
 interface Props {
   isOpen: boolean;
@@ -30,7 +33,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
   // Session & Auth state
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [adminUsername, setAdminUsername] = useState<string>('admin');
+  const [adminUsername, setAdminUsername] = useState<string>('');
   const [adminPassword, setAdminPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isLoggingIn, setIsLoggingIn] = useState<boolean>(false);
@@ -45,6 +48,9 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [typeFilter, setTypeFilter] = useState<string>('All');
 
   // UI state
+  const [activeTab, setActiveTab] = useState<'inquiries' | 'traffic'>('inquiries');
+  const [trafficStats, setTrafficStats] = useState<TrafficStatsData | null>(null);
+  const [trafficLoading, setTrafficLoading] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState<InquiryRecord | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -114,6 +120,28 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [getAuthHeaders, handleUnauthorized]);
 
+  // Fetch website traffic analytics
+  const fetchTrafficStats = useCallback(async (tokenToUse?: string) => {
+    setTrafficLoading(true);
+    try {
+      const res = await fetch('/api/admin/traffic', {
+        headers: getAuthHeaders(tokenToUse)
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
+      const data = await res.json();
+      setTrafficStats(data);
+    } catch (err) {
+      console.error('Error fetching traffic analytics:', err);
+    } finally {
+      setTrafficLoading(false);
+    }
+  }, [getAuthHeaders, handleUnauthorized]);
+
   // Validate existing stored session when opening the modal
   useEffect(() => {
     if (!isOpen) return;
@@ -136,6 +164,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
           setLoginError(null);
           fetchRecords(storedToken);
           fetchStats(storedToken);
+          fetchTrafficStats(storedToken);
         } else {
           handleUnauthorized();
         }
@@ -143,7 +172,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       .catch(() => {
         handleUnauthorized();
       });
-  }, [isOpen, fetchRecords, fetchStats, handleUnauthorized]);
+  }, [isOpen, fetchRecords, fetchStats, fetchTrafficStats, handleUnauthorized]);
 
   // Re-fetch records when filters change (only if authenticated)
   useEffect(() => {
@@ -188,9 +217,10 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setLoginError(null);
       showNotification('Administrator authenticated successfully');
 
-      // Load records and stats
+      // Load records, stats and traffic analytics
       fetchRecords(token);
       fetchStats(token);
+      fetchTrafficStats(token);
     } catch (err) {
       setLoginError('Connection error. Please check your network and retry.');
     } finally {
@@ -406,11 +436,11 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
             {isAuthenticated && (
               <button
                 onClick={handleLogout}
-                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-red-300 hover:text-white bg-red-950/50 hover:bg-red-900/60 border border-red-500/30 rounded-lg transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-300 hover:text-white bg-red-950/70 hover:bg-red-900/80 border border-red-500/40 rounded-lg transition-colors cursor-pointer"
                 title="Log Out of Admin Session"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Log Out</span>
+                <span className="hidden xs:inline">Log Out</span>
               </button>
             )}
             <button
@@ -428,6 +458,46 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
           <div className="bg-emerald-600/90 text-white text-xs font-semibold px-4 py-2 flex items-center justify-center gap-2 shadow-md">
             <CheckCircle className="w-4 h-4" />
             <span>{actionMessage}</span>
+          </div>
+        )}
+
+        {/* AUTHENTICATED ADMIN TAB NAVIGATION */}
+        {isAuthenticated && (
+          <div className="flex items-center gap-2 px-4 sm:px-6 pt-2 bg-[#021015] border-b border-[#D4AF37]/25 overflow-x-auto">
+            <button
+              type="button"
+              onClick={() => setActiveTab('inquiries')}
+              className={`px-4 py-2.5 text-xs font-bold font-cinzel rounded-t-xl transition-all border-t border-x flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'inquiries'
+                  ? 'bg-[#03151E] border-[#D4AF37]/50 text-[#F9E79F] shadow-sm'
+                  : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <FileSpreadsheet className="w-4 h-4 text-[#D4AF37]" />
+              <span>Student Inquiries & Admissions</span>
+              {stats?.total !== undefined && (
+                <span className="px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300 text-[10px] font-mono font-bold">
+                  {stats.total}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('traffic');
+                fetchTrafficStats();
+              }}
+              className={`px-4 py-2.5 text-xs font-bold font-cinzel rounded-t-xl transition-all border-t border-x flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'traffic'
+                  ? 'bg-[#03151E] border-[#D4AF37]/50 text-[#F9E79F] shadow-sm'
+                  : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <TrendingUp className="w-4 h-4 text-[#D4AF37]" />
+              <span>Website Traffic / Visitor Analytics</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
           </div>
         )}
 
@@ -461,7 +531,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   type="text"
                   required
                   autoComplete="username"
-                  placeholder="admin"
+                  placeholder="Enter administrator username"
                   value={adminUsername}
                   onChange={(e) => setAdminUsername(e.target.value)}
                   className="w-full px-4 py-2.5 rounded-xl bg-[#021319] border border-slate-700 text-white text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-colors"
@@ -519,8 +589,15 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
         ) : (
           /* AUTHENTICATED DASHBOARD VIEW */
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
-            
-            {/* Stats Overview */}
+            {activeTab === 'traffic' ? (
+              <TrafficAnalyticsView
+                stats={trafficStats}
+                loading={trafficLoading}
+                onRefresh={() => fetchTrafficStats()}
+              />
+            ) : (
+              <>
+                {/* Stats Overview */}
             {stats && (
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
                 <div className="p-3.5 rounded-xl bg-[#021319] border border-slate-800">
@@ -887,6 +964,8 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   </div>
                 </div>
               </div>
+            )}
+              </>
             )}
 
           </div>

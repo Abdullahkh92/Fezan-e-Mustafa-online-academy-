@@ -19,6 +19,11 @@ import {
   recordLoginAttempt,
   AuthenticatedRequest
 } from './src/server/auth.ts';
+import {
+  initTrafficService,
+  recordVisit,
+  getTrafficAnalytics
+} from './src/server/trafficService.ts';
 
 dotenv.config();
 
@@ -29,6 +34,12 @@ const app = express();
 const PORT = 3000;
 
 app.use(express.json());
+app.use(express.text({ type: ['text/plain', 'application/json'] }));
+
+// Statically serve images reliably in development and production
+app.use('/images', express.static(path.resolve(__dirname, 'public/images'), { maxAge: '7d' }));
+app.use('/src/assets/images', express.static(path.resolve(__dirname, 'src/assets/images'), { maxAge: '7d' }));
+app.use(express.static(path.resolve(__dirname, 'public'), { maxAge: '7d' }));
 
 // Initial demo records with isDemo: true to separate from real production submissions
 const initialSeedRecords: InquiryDocument[] = [
@@ -423,10 +434,73 @@ app.post('/api/admin/seed', requireAdminAuth, async (_req: AuthenticatedRequest,
   }
 });
 
+/**
+ * 7. Public: Anonymous Visitor Traffic Tracking (rate-limited, sanitized)
+ */
+app.post('/api/track-visit', async (req: Request, res: Response) => {
+  try {
+    let payload = req.body;
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload);
+      } catch (_) {}
+    }
+
+    if (!payload || typeof payload !== 'object' || !payload.visitorId) {
+      return res.status(400).json({ error: 'Invalid tracking payload' });
+    }
+
+    const result = await recordVisit({
+      visitorId: String(payload.visitorId),
+      sessionId: payload.sessionId ? String(payload.sessionId) : undefined,
+      page: payload.page ? String(payload.page) : '/',
+      referrer: payload.referrer ? String(payload.referrer) : 'Direct',
+      deviceType: payload.deviceType,
+      browser: payload.browser ? String(payload.browser) : 'Unknown',
+      os: payload.os ? String(payload.os) : 'Unknown',
+      country: payload.country ? String(payload.country) : undefined,
+      userAgent: req.headers['user-agent']
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('[Traffic Tracking Error]:', error);
+    return res.status(500).json({ error: 'Failed to record visitor analytics' });
+  }
+});
+
+/**
+ * 8. Search Engine Crawling & Indexation Endpoints (SEO)
+ */
+app.get('/robots.txt', (_req: Request, res: Response) => {
+  res.type('text/plain');
+  res.sendFile(path.resolve(__dirname, 'public/robots.txt'));
+});
+
+app.get('/sitemap.xml', (_req: Request, res: Response) => {
+  res.type('application/xml');
+  res.sendFile(path.resolve(__dirname, 'public/sitemap.xml'));
+});
+
+/**
+ * 8. Admin: Comprehensive Traffic Analytics (Strictly authenticated)
+ */
+app.get('/api/admin/traffic', requireAdminAuth, (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const stats = getTrafficAnalytics();
+    return res.json(stats);
+  } catch (error) {
+    console.error('[Traffic Analytics Error]:', error);
+    return res.status(500).json({ error: 'Failed to generate traffic analytics' });
+  }
+});
+
 // =========================================================================
 // VITE SPA MIDDLEWARE / STATIC SERVING
 // =========================================================================
 async function startServer() {
+  // Initialize persistent visitor analytics engine
+  await initTrafficService();
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (!isProduction) {
