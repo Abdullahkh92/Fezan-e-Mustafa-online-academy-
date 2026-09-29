@@ -24,6 +24,13 @@ import {
   recordVisit,
   getTrafficAnalytics
 } from './src/server/trafficService.ts';
+import {
+  initPaymentService,
+  submitPayment,
+  getAllPayments,
+  getPaymentByReference,
+  updatePaymentStatus
+} from './src/server/paymentService.ts';
 
 dotenv.config();
 
@@ -33,8 +40,8 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(express.json());
-app.use(express.text({ type: ['text/plain', 'application/json'] }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.text({ type: ['text/plain', 'application/json'], limit: '10mb' }));
 
 // Statically serve images reliably in development and production
 app.use('/images', express.static(path.resolve(__dirname, 'public/images'), { maxAge: '7d' }));
@@ -495,12 +502,97 @@ app.get('/api/admin/traffic', requireAdminAuth, (_req: AuthenticatedRequest, res
   }
 });
 
+/**
+ * 9. Public: Submit Bank Payment for Verification
+ */
+app.post('/api/payments', async (req: Request, res: Response) => {
+  try {
+    const { customerName, mobileNumber, amount, transactionId, paymentDate, screenshotUrl } = req.body;
+    if (!customerName || !mobileNumber || !amount || !transactionId) {
+      return res.status(400).json({ error: 'Please provide Customer Name, Mobile Number, Amount, and Transaction ID.' });
+    }
+
+    const record = await submitPayment({
+      customerName,
+      mobileNumber,
+      amount,
+      transactionId,
+      paymentDate: paymentDate || new Date().toISOString().split('T')[0],
+      screenshotUrl
+    });
+
+    return res.status(201).json({ success: true, record });
+  } catch (error) {
+    console.error('[Payment Submission Error]:', error);
+    return res.status(500).json({ error: 'Failed to submit payment details' });
+  }
+});
+
+/**
+ * 10. Public: Look Up Payment Verification Status
+ */
+app.get('/api/payments/status/:reference', (req: Request, res: Response) => {
+  try {
+    const record = getPaymentByReference(req.params.reference);
+    if (!record) {
+      return res.status(404).json({ error: 'Payment reference number not found' });
+    }
+    return res.json({
+      referenceNumber: record.referenceNumber,
+      customerName: record.customerName,
+      amount: record.amount,
+      status: record.status,
+      submissionDate: record.submissionDate,
+      paymentDate: record.paymentDate
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to look up payment' });
+  }
+});
+
+/**
+ * 11. Admin: Get All Payments
+ */
+app.get('/api/admin/payments', requireAdminAuth, (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const payments = getAllPayments();
+    return res.json({ count: payments.length, payments });
+  } catch (error) {
+    console.error('[Admin Payments Error]:', error);
+    return res.status(500).json({ error: 'Failed to fetch payments' });
+  }
+});
+
+/**
+ * 12. Admin: Update Payment Verification Status
+ */
+app.patch('/api/admin/payments/:id', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { status, adminNotes } = req.body;
+    if (!status || !['Pending Verification', 'Verified', 'Rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid payment status. Must be Pending Verification, Verified, or Rejected.' });
+    }
+
+    const updated = await updatePaymentStatus(req.params.id, status, adminNotes, req.adminUser?.username || 'Admin');
+    if (!updated) {
+      return res.status(404).json({ error: 'Payment record not found' });
+    }
+
+    return res.json({ success: true, payment: updated });
+  } catch (error) {
+    console.error('[Admin Payment Update Error]:', error);
+    return res.status(500).json({ error: 'Failed to update payment status' });
+  }
+});
+
 // =========================================================================
 // VITE SPA MIDDLEWARE / STATIC SERVING
 // =========================================================================
 async function startServer() {
   // Initialize persistent visitor analytics engine
   await initTrafficService();
+  // Initialize persistent payment service
+  await initPaymentService();
   const isProduction = process.env.NODE_ENV === 'production';
 
   if (!isProduction) {

@@ -1,12 +1,13 @@
 import React from 'react';
-import { MessageCircle, Shield, Sparkles, BookOpen, Clock, Phone, Heart } from 'lucide-react';
+import { MessageCircle, Shield, Sparkles, BookOpen, Clock, Phone, Heart, CreditCard } from 'lucide-react';
 
 interface Props {
   onOpenAdmin: () => void;
   onOpenTrial: () => void;
+  onOpenPayment: () => void;
 }
 
-export const Footer: React.FC<Props> = ({ onOpenAdmin, onOpenTrial }) => {
+export const Footer: React.FC<Props> = ({ onOpenAdmin, onOpenTrial, onOpenPayment }) => {
   return (
     <footer className="bg-[#020e14] border-t-2 border-[#D4AF37]/25 text-slate-300 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -82,6 +83,7 @@ export const Footer: React.FC<Props> = ({ onOpenAdmin, onOpenTrial }) => {
               <li><a href="#online-classes" className="hover:text-[#F9E79F] transition-colors block py-0.5">Online Zoom Classes</a></li>
               <li><a href="#why-choose-us" className="hover:text-[#F9E79F] transition-colors block py-0.5">Why Choose Us</a></li>
               <li><a href="#faqs" className="hover:text-[#F9E79F] transition-colors block py-0.5">FAQs</a></li>
+              <li><button onClick={onOpenPayment} className="hover:text-[#F9E79F] transition-colors text-left block py-0.5 cursor-pointer">Fee Payment (Optional)</button></li>
               <li><button onClick={onOpenTrial} className="hover:text-[#F9E79F] transition-colors text-left block py-0.5 cursor-pointer">Free 3-Day Trial</button></li>
               <li><a href="#contact" className="hover:text-[#F9E79F] transition-colors block py-0.5">Contact Us</a></li>
             </ul>

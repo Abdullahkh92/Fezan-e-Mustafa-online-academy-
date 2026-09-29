@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import confetti from 'canvas-confetti';
 import { SubmissionType } from '../types/academy';
 import { COURSES_DATA } from '../data/coursesData';
+import { COUNTRIES_LIST } from '../data/countries';
 import { CheckCircle2, AlertCircle, Loader2, Sparkles, Send, MessageCircle, PartyPopper } from 'lucide-react';
 
 interface Props {
@@ -365,21 +366,13 @@ export const AdmissionTrialSection: React.FC<Props> = ({ preSelectedCourse = '',
                   <select
                     value={country}
                     onChange={(e) => setCountry(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-[#021319] border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-colors"
+                    className="w-full px-4 py-2.5 rounded-xl bg-[#021319] border border-slate-700 text-white text-xs sm:text-sm focus:outline-none focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37] transition-colors cursor-pointer"
                   >
-                    <option value="United Kingdom">United Kingdom (UK)</option>
-                    <option value="United States">United States (USA)</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
-                    <option value="Pakistan">Pakistan</option>
-                    <option value="Saudi Arabia">Saudi Arabia (KSA)</option>
-                    <option value="United Arab Emirates">UAE (Dubai/Abu Dhabi)</option>
-                    <option value="Germany">Germany</option>
-                    <option value="France">France</option>
-                    <option value="Qatar">Qatar</option>
-                    <option value="Kuwait">Kuwait</option>
-                    <option value="Oman">Oman</option>
-                    <option value="Other">Other Country</option>
+                    {COUNTRIES_LIST.map((c) => (
+                      <option key={c.value} value={c.value} className="bg-[#021319] text-white">
+                        {c.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

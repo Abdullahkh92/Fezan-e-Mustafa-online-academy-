@@ -1,0 +1,16 @@
+[
+  {
+    "id": "pay_1790689922450_8fu7u",
+    "referenceNumber": "PAY-FMA-2026-ZD748957",
+    "customerName": "Muhammad Salman",
+    "mobileNumber": "+92 300 9876543",
+    "amount": "PKR 3,500",
+    "transactionId": "UBL-FT-8291039",
+    "paymentDate": "2026-09-29",
+    "submissionDate": "2026-09-29T13:52:02.450Z",
+    "status": "Verified",
+    "adminNotes": "Confirmed in UBL statement by Admin Abdullah.",
+    "verifiedAt": "2026-09-29T13:52:02.472Z",
+    "verifiedBy": "abdullah"
+  }
+]

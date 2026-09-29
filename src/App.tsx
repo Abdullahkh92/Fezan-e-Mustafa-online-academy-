@@ -17,6 +17,7 @@ import { Footer } from './components/Footer';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
 import { CourseDetailModal } from './components/CourseDetailModal';
 import { AdminDashboardModal } from './components/AdminDashboardModal';
+import { PaymentPage } from './components/PaymentPage';
 import { CourseDetail } from './types/academy';
 import { trackPageView } from './utils/visitorTracker';
 
@@ -24,8 +25,9 @@ export default function App() {
   const [selectedCourseForModal, setSelectedCourseForModal] = useState<CourseDetail | null>(null);
   const [preSelectedCourse, setPreSelectedCourse] = useState<string>('');
   const [adminModalOpen, setAdminModalOpen] = useState<boolean>(false);
+  const [isPaymentPage, setIsPaymentPage] = useState<boolean>(false);
 
-  // Initialize privacy-friendly visitor analytics & handle /admin routing
+  // Initialize privacy-friendly visitor analytics & handle /admin and /payment routing
   useEffect(() => {
     // Record page visit
     trackPageView();
@@ -34,6 +36,15 @@ export default function App() {
       trackPageView();
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
+
+      // Check payment route
+      if (path === '/payment' || hash === '#payment') {
+        setIsPaymentPage(true);
+      } else {
+        setIsPaymentPage(false);
+      }
+
+      // Check admin route
       if (path === '/admin' || path === '/login' || hash === '#admin' || hash === '#login') {
         setAdminModalOpen(true);
       }
@@ -49,6 +60,24 @@ export default function App() {
     };
   }, []);
 
+  const handleOpenPayment = () => {
+    setIsPaymentPage(true);
+    if (window.location.pathname !== '/payment') {
+      window.history.pushState(null, '', '/payment');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    trackPageView();
+  };
+
+  const handleBackToHome = () => {
+    setIsPaymentPage(false);
+    if (window.location.pathname === '/payment' || window.location.hash === '#payment') {
+      window.history.pushState(null, '', '/');
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    trackPageView();
+  };
+
   const handleOpenAdmin = () => {
     setAdminModalOpen(true);
     if (window.location.pathname !== '/admin') {
@@ -59,7 +88,7 @@ export default function App() {
   const handleCloseAdmin = () => {
     setAdminModalOpen(false);
     if (window.location.pathname === '/admin' || window.location.pathname === '/login') {
-      window.history.pushState(null, '', '/');
+      window.history.pushState(null, '', isPaymentPage ? '/payment' : '/');
     }
   };
 
@@ -85,12 +114,27 @@ export default function App() {
     }
   };
 
+  // Dedicated Payment Page View
+  if (isPaymentPage) {
+    return (
+      <div className="min-h-screen bg-[#020e14] text-slate-100 flex flex-col font-sans selection:bg-[#D4AF37]/30 selection:text-[#FFF8E7]">
+        <PaymentPage onBackToHome={handleBackToHome} />
+        <FloatingWhatsApp />
+        <AdminDashboardModal
+          isOpen={adminModalOpen}
+          onClose={handleCloseAdmin}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#03151E] text-slate-100 flex flex-col font-sans selection:bg-[#D4AF37]/30 selection:text-[#FFF8E7]">
       {/* 3-Zone Top Bar Navigation */}
       <Navbar
         onOpenTrial={handleStartLearning}
         onOpenAdmin={handleOpenAdmin}
+        onOpenPayment={handleOpenPayment}
       />
 
       {/* Main Content Area */}
@@ -132,6 +176,7 @@ export default function App() {
       <Footer
         onOpenAdmin={handleOpenAdmin}
         onOpenTrial={handleStartLearning}
+        onOpenPayment={handleOpenPayment}
       />
 
       {/* Floating WhatsApp Quick Button */}

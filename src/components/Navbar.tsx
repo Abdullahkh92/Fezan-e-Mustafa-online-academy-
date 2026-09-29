@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { Menu, X, Shield, MessageCircle, Sparkles } from 'lucide-react';
+import { Menu, X, Shield, MessageCircle, Sparkles, CreditCard } from 'lucide-react';
 
 interface Props {
   onOpenTrial: () => void;
   onOpenAdmin: () => void;
+  onOpenPayment: () => void;
 }
 
-export const Navbar: React.FC<Props> = ({ onOpenTrial, onOpenAdmin }) => {
+export const Navbar: React.FC<Props> = ({ onOpenTrial, onOpenAdmin, onOpenPayment }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
@@ -16,6 +17,7 @@ export const Navbar: React.FC<Props> = ({ onOpenTrial, onOpenAdmin }) => {
     { label: 'Why Choose Us', href: '#why-choose-us' },
     { label: 'Admissions', href: '#admission' },
     { label: 'FAQs', href: '#faqs' },
+    { label: 'Payment', href: '#payment', isAction: true },
     { label: 'Contact', href: '#contact' },
   ];
 
@@ -43,14 +45,26 @@ export const Navbar: React.FC<Props> = ({ onOpenTrial, onOpenAdmin }) => {
         {/* Zone 2: Navigation Links (visible on desktop >= 1024px) */}
         <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-200">
           {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="hover:text-[#F9E79F] transition-colors py-1 relative group font-medium"
-            >
-              <span>{link.label}</span>
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#D4AF37] transition-all duration-300 group-hover:w-full" />
-            </a>
+            link.label === 'Payment' ? (
+              <button
+                key={link.label}
+                type="button"
+                onClick={onOpenPayment}
+                className="hover:text-[#F9E79F] transition-colors py-1 relative group font-medium cursor-pointer"
+              >
+                <span>{link.label}</span>
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#D4AF37] transition-all duration-300 group-hover:w-full" />
+              </button>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="hover:text-[#F9E79F] transition-colors py-1 relative group font-medium"
+              >
+                <span>{link.label}</span>
+                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#D4AF37] transition-all duration-300 group-hover:w-full" />
+              </a>
+            )
           ))}
         </nav>
 
@@ -75,6 +89,17 @@ export const Navbar: React.FC<Props> = ({ onOpenTrial, onOpenAdmin }) => {
           >
             <Sparkles className="w-3.5 h-3.5 text-slate-950" />
             <span>3-Day Free Trial</span>
+          </button>
+
+          {/* Non-intrusive Optional Payment Portal Link */}
+          <button
+            onClick={onOpenPayment}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-[#F9E79F] bg-[#02141a] hover:bg-[#031d24] border border-slate-700/80 hover:border-[#D4AF37]/50 rounded-xl transition-colors whitespace-nowrap cursor-pointer"
+            title="Make a Payment (Optional)"
+            aria-label="Payment Portal"
+          >
+            <CreditCard className="w-3.5 h-3.5 text-[#D4AF37]" />
+            <span className="font-cinzel text-[11px]">Payment</span>
           </button>
 
           {/* Clearly Visible Admin Portal Button */}
@@ -126,14 +151,29 @@ export const Navbar: React.FC<Props> = ({ onOpenTrial, onOpenAdmin }) => {
         <div className="lg:hidden bg-[#021217] border-b border-[#D4AF37]/25 px-6 py-6 space-y-5 animate-in slide-in-from-top-4 duration-300 shadow-2xl">
           <nav className="flex flex-col space-y-3 text-sm font-medium text-slate-200">
             {navLinks.map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="py-2 px-3 rounded-lg hover:bg-slate-800/50 hover:text-[#F9E79F] transition-colors font-cinzel"
-              >
-                {link.label}
-              </a>
+              link.label === 'Payment' ? (
+                <button
+                  key={link.label}
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenPayment();
+                  }}
+                  className="py-2 px-3 rounded-lg hover:bg-slate-800/50 text-[#F9E79F] hover:text-white transition-colors font-cinzel text-left flex items-center gap-2 cursor-pointer"
+                >
+                  <CreditCard className="w-4 h-4 text-[#D4AF37]" />
+                  <span>Fee Payment (Optional)</span>
+                </button>
+              ) : (
+                <a
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="py-2 px-3 rounded-lg hover:bg-slate-800/50 hover:text-[#F9E79F] transition-colors font-cinzel"
+                >
+                  {link.label}
+                </a>
+              )
             ))}
           </nav>
 

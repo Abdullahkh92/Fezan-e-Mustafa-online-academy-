@@ -18,9 +18,12 @@ import {
   AlertTriangle,
   Loader2,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  CreditCard
 } from 'lucide-react';
 import { TrafficAnalyticsView, TrafficStatsData } from './TrafficAnalyticsView';
+import { AdminPaymentsView } from './AdminPaymentsView';
+import { PaymentRecord } from '../server/paymentService';
 
 interface Props {
   isOpen: boolean;
@@ -48,9 +51,11 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [typeFilter, setTypeFilter] = useState<string>('All');
 
   // UI state
-  const [activeTab, setActiveTab] = useState<'inquiries' | 'traffic'>('inquiries');
+  const [activeTab, setActiveTab] = useState<'inquiries' | 'traffic' | 'payments'>('inquiries');
   const [trafficStats, setTrafficStats] = useState<TrafficStatsData | null>(null);
   const [trafficLoading, setTrafficLoading] = useState<boolean>(false);
+  const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState<boolean>(false);
   const [selectedRecord, setSelectedRecord] = useState<InquiryRecord | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
@@ -142,6 +147,28 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   }, [getAuthHeaders, handleUnauthorized]);
 
+  // Fetch payments from server with authentication
+  const fetchPayments = useCallback(async (customToken?: string) => {
+    setPaymentsLoading(true);
+    try {
+      const res = await fetch('/api/admin/payments', {
+        headers: getAuthHeaders(customToken)
+      });
+
+      if (res.status === 401 || res.status === 403) {
+        handleUnauthorized();
+        return;
+      }
+
+      const data = await res.json();
+      setPayments(data.payments || []);
+    } catch (err) {
+      console.error('Error fetching payments:', err);
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, [getAuthHeaders, handleUnauthorized]);
+
   // Validate existing stored session when opening the modal
   useEffect(() => {
     if (!isOpen) return;
@@ -165,6 +192,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
           fetchRecords(storedToken);
           fetchStats(storedToken);
           fetchTrafficStats(storedToken);
+          fetchPayments(storedToken);
         } else {
           handleUnauthorized();
         }
@@ -172,7 +200,7 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       .catch(() => {
         handleUnauthorized();
       });
-  }, [isOpen, fetchRecords, fetchStats, fetchTrafficStats, handleUnauthorized]);
+  }, [isOpen, fetchRecords, fetchStats, fetchTrafficStats, fetchPayments, handleUnauthorized]);
 
   // Re-fetch records when filters change (only if authenticated)
   useEffect(() => {
@@ -217,10 +245,11 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       setLoginError(null);
       showNotification('Administrator authenticated successfully');
 
-      // Load records, stats and traffic analytics
+      // Load records, stats, traffic analytics and payments
       fetchRecords(token);
       fetchStats(token);
       fetchTrafficStats(token);
+      fetchPayments(token);
     } catch (err) {
       setLoginError('Connection error. Please check your network and retry.');
     } finally {
@@ -498,6 +527,27 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
               <span>Website Traffic / Visitor Analytics</span>
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab('payments');
+                fetchPayments();
+              }}
+              className={`px-4 py-2.5 text-xs font-bold font-cinzel rounded-t-xl transition-all border-t border-x flex items-center gap-2 whitespace-nowrap cursor-pointer ${
+                activeTab === 'payments'
+                  ? 'bg-[#03151E] border-[#D4AF37]/50 text-[#F9E79F] shadow-sm'
+                  : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <CreditCard className="w-4 h-4 text-[#D4AF37]" />
+              <span>Payments &amp; Verifications</span>
+              {payments.filter(p => p.status === 'Pending Verification').length > 0 && (
+                <span className="px-2 py-0.5 rounded-full bg-amber-950 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-bold animate-pulse">
+                  {payments.filter(p => p.status === 'Pending Verification').length} pending
+                </span>
+              )}
+            </button>
           </div>
         )}
 
@@ -594,6 +644,14 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 stats={trafficStats}
                 loading={trafficLoading}
                 onRefresh={() => fetchTrafficStats()}
+              />
+            ) : activeTab === 'payments' ? (
+              <AdminPaymentsView
+                payments={payments}
+                loading={paymentsLoading}
+                token={authToken || sessionStorage.getItem(TOKEN_STORAGE_KEY) || ''}
+                onRefresh={() => fetchPayments()}
+                onShowNotification={showNotification}
               />
             ) : (
               <>
