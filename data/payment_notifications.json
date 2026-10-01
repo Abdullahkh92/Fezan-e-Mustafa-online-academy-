@@ -1,0 +1,136 @@
+[
+  {
+    "id": "notif_1790862268442_w45vp",
+    "recipientType": "user",
+    "userId": "usr_test_4",
+    "paymentId": "pay_1790862268274_h7r3y",
+    "title": "Payment Rejected",
+    "message": "Your payment of PKR 1,500 has been rejected. Reason: Transaction ID not found in Easypaisa statement for 03012887630.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:28.442Z"
+  },
+  {
+    "id": "notif_1790862268360_czlqv",
+    "recipientType": "user",
+    "userId": "usr_test_4",
+    "paymentId": "pay_1790862268274_h7r3y",
+    "title": "Payment Submitted",
+    "message": "Your payment has been submitted successfully and is pending verification.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:28.360Z"
+  },
+  {
+    "id": "notif_1790862268326_rpggz",
+    "recipientType": "admin",
+    "paymentId": "pay_1790862268274_h7r3y",
+    "title": "New Payment Received",
+    "message": "New Payment Received\nUser: Bilal Khan\nAmount: PKR 1,500\nPayment Method: Easypaisa\nTransaction ID: EP-REJECT-TID-1790862268273",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:28.326Z"
+  },
+  {
+    "id": "notif_1790862268239_dto7u",
+    "recipientType": "user",
+    "userId": "usr_test_2",
+    "paymentId": "pay_1790862267940_iare3",
+    "title": "Payment Approved",
+    "message": "Your payment of PKR 3,500 has been verified successfully.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:28.239Z"
+  },
+  {
+    "id": "notif_1790862268030_bzzag",
+    "recipientType": "user",
+    "userId": "usr_test_2",
+    "paymentId": "pay_1790862267940_iare3",
+    "title": "Payment Submitted",
+    "message": "Your payment has been submitted successfully and is pending verification.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:28.030Z"
+  },
+  {
+    "id": "notif_1790862267968_ufsc1",
+    "recipientType": "admin",
+    "paymentId": "pay_1790862267940_iare3",
+    "title": "New Payment Received",
+    "message": "New Payment Received\nUser: Amina Fatima\nAmount: PKR 3,500\nPayment Method: JazzCash\nTransaction ID: TID-UNIQUE-7003",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.968Z"
+  },
+  {
+    "id": "notif_1790862267873_5enxz",
+    "recipientType": "user",
+    "userId": "usr_test_1",
+    "paymentId": "pay_1790862267790_fsswu",
+    "title": "Payment Submitted",
+    "message": "Your payment has been submitted successfully and is pending verification.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.873Z"
+  },
+  {
+    "id": "notif_1790862267846_get5g",
+    "recipientType": "admin",
+    "paymentId": "pay_1790862267790_fsswu",
+    "title": "New Payment Received",
+    "message": "New Payment Received\nUser: Zayd Tariq\nAmount: PKR 50,000\nPayment Method: Easypaisa\nTransaction ID: EP-50000-PKR-1790862267788",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.846Z"
+  },
+  {
+    "id": "notif_1790862267764_9byq4",
+    "recipientType": "user",
+    "userId": "usr_test_1",
+    "paymentId": "pay_1790862267646_dh73i",
+    "title": "Payment Submitted",
+    "message": "Your payment has been submitted successfully and is pending verification.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.764Z"
+  },
+  {
+    "id": "notif_1790862267703_5cq4d",
+    "recipientType": "admin",
+    "paymentId": "pay_1790862267646_dh73i",
+    "title": "New Payment Received",
+    "message": "New Payment Received\nUser: Zayd Tariq\nAmount: PKR 2,500\nPayment Method: JazzCash\nTransaction ID: JC-2500-PKR-1790862267645",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.703Z"
+  },
+  {
+    "id": "notif_1790862267620_7vjen",
+    "recipientType": "user",
+    "userId": "usr_test_1",
+    "paymentId": "pay_1790862267516_stgay",
+    "title": "Payment Submitted",
+    "message": "Your payment has been submitted successfully and is pending verification.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.620Z"
+  },
+  {
+    "id": "notif_1790862267545_3tq2n",
+    "recipientType": "admin",
+    "paymentId": "pay_1790862267516_stgay",
+    "title": "New Payment Received",
+    "message": "New Payment Received\nUser: Zayd Tariq\nAmount: PKR 600\nPayment Method: Easypaisa\nTransaction ID: EP-600-PKR-1790862267515",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.545Z"
+  },
+  {
+    "id": "notif_1790862267431_fhq5t",
+    "recipientType": "user",
+    "userId": "usr_test_1",
+    "paymentId": "pay_1790862267129_anhug",
+    "title": "Payment Submitted",
+    "message": "Your payment has been submitted successfully and is pending verification.",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.431Z"
+  },
+  {
+    "id": "notif_1790862267259_yyqnr",
+    "recipientType": "admin",
+    "paymentId": "pay_1790862267129_anhug",
+    "title": "New Payment Received",
+    "message": "New Payment Received\nUser: Zayd Tariq\nAmount: PKR 100\nPayment Method: JazzCash\nTransaction ID: JC-100-PKR-1790862267127",
+    "read": false,
+    "createdAt": "2026-10-01T13:44:27.259Z"
+  }
+]

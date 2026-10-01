@@ -542,9 +542,9 @@ export const AdminDashboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
             >
               <CreditCard className="w-4 h-4 text-[#D4AF37]" />
               <span>Payments &amp; Verifications</span>
-              {payments.filter(p => p.status === 'Pending Verification').length > 0 && (
+              {payments.filter(p => p.status === 'Pending').length > 0 && (
                 <span className="px-2 py-0.5 rounded-full bg-amber-950 border border-amber-500/40 text-amber-300 text-[10px] font-mono font-bold animate-pulse">
-                  {payments.filter(p => p.status === 'Pending Verification').length} pending
+                  {payments.filter(p => p.status === 'Pending').length} pending
                 </span>
               )}
             </button>

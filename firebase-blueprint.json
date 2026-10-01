@@ -131,58 +131,112 @@
       },
       "required": ["id", "visitorId", "timestamp", "date", "page"]
     },
-    "PaymentSubmission": {
-      "title": "Bank Payment Submission",
-      "description": "Bank transfer payment verification submissions",
+    "PaymentRecord": {
+      "title": "Payment Record",
+      "description": "Student tuition fee payments via JazzCash and Easypaisa",
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
           "description": "Unique payment record ID"
         },
-        "referenceNumber": {
+        "userId": {
           "type": "string",
-          "description": "Unique public payment reference number (e.g. PAY-FMA-...)"
+          "description": "Unique student/user identifier"
         },
         "customerName": {
           "type": "string",
-          "description": "Full name of the payer"
+          "description": "Full name of the paying student/parent"
         },
         "mobileNumber": {
           "type": "string",
-          "description": "Contact mobile / WhatsApp number"
+          "description": "Payer mobile number"
         },
         "amount": {
+          "type": "number",
+          "description": "Amount in PKR (minimum PKR 100, no maximum limit)"
+        },
+        "currency": {
           "type": "string",
-          "description": "Amount transferred"
+          "description": "Payment currency code (PKR)"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "enum": ["JazzCash", "Easypaisa"],
+          "description": "Selected payment method"
         },
         "transactionId": {
           "type": "string",
-          "description": "Bank transaction ID or reference number"
-        },
-        "paymentDate": {
-          "type": "string",
-          "description": "Date payment was executed"
-        },
-        "screenshotUrl": {
-          "type": "string",
-          "description": "Receipt or screenshot image data"
-        },
-        "submissionDate": {
-          "type": "string",
-          "description": "ISO 8601 submission timestamp"
+          "description": "Unique Transaction ID or Reference Number from JazzCash/Easypaisa"
         },
         "status": {
           "type": "string",
-          "enum": ["Pending Verification", "Verified", "Rejected"],
-          "description": "Administrative verification status"
+          "enum": ["Pending", "Approved", "Rejected"],
+          "description": "Payment status"
+        },
+        "rejectionReason": {
+          "type": "string",
+          "description": "Reason for rejection if payment is rejected"
+        },
+        "verifiedAt": {
+          "type": "string",
+          "description": "Timestamp when approved or rejected"
+        },
+        "verifiedBy": {
+          "type": "string",
+          "description": "Admin username or API engine that verified payment"
         },
         "adminNotes": {
           "type": "string",
-          "description": "Internal verification or audit notes"
+          "description": "Internal administrative notes"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO 8601 creation timestamp"
         }
       },
-      "required": ["id", "referenceNumber", "customerName", "mobileNumber", "amount", "transactionId", "status", "submissionDate"]
+      "required": ["id", "userId", "customerName", "mobileNumber", "amount", "paymentMethod", "transactionId", "status", "createdAt"]
+    },
+    "PaymentNotification": {
+      "title": "Payment Notification",
+      "description": "Real-time backend notification records for users and administrators",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique notification ID"
+        },
+        "recipientType": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "Target recipient type"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Associated user identifier"
+        },
+        "paymentId": {
+          "type": "string",
+          "description": "Associated payment record ID"
+        },
+        "title": {
+          "type": "string",
+          "description": "Notification title"
+        },
+        "message": {
+          "type": "string",
+          "description": "Detailed notification message"
+        },
+        "read": {
+          "type": "boolean",
+          "description": "Whether the notification was read"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "ISO 8601 timestamp"
+        }
+      },
+      "required": ["id", "recipientType", "title", "message", "read", "createdAt"]
     }
   },
   "firestore": {
@@ -195,8 +249,12 @@
       "description": "Collection of recorded anonymous visitor traffic logs for admin analytics"
     },
     "/payments/{paymentId}": {
-      "schema": "PaymentSubmission",
-      "description": "Collection of bank transfer payment submissions submitted by users for admin verification"
+      "schema": "PaymentRecord",
+      "description": "Collection of student fee payments via JazzCash and Easypaisa"
+    },
+    "/payment_notifications/{notificationId}": {
+      "schema": "PaymentNotification",
+      "description": "Collection of real database-backed notifications for admin and users"
     }
   }
 }

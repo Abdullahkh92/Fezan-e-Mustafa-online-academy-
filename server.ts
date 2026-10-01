@@ -26,10 +26,14 @@ import {
 } from './src/server/trafficService.ts';
 import {
   initPaymentService,
+  OFFICIAL_PAYMENT_ACCOUNTS,
   submitPayment,
-  getAllPayments,
-  getPaymentByReference,
-  updatePaymentStatus
+  adminVerifyPayment,
+  getUserPaymentHistory,
+  getUserNotifications,
+  getAllAdminPayments,
+  getAdminNotifications,
+  markNotificationsAsRead
 } from './src/server/paymentService.ts';
 
 dotenv.config();
@@ -503,59 +507,102 @@ app.get('/api/admin/traffic', requireAdminAuth, (_req: AuthenticatedRequest, res
 });
 
 /**
- * 9. Public: Submit Bank Payment for Verification
+ * 9. Public: Get Official Payment Accounts Info (JazzCash / Easypaisa)
  */
-app.post('/api/payments', async (req: Request, res: Response) => {
+app.get('/api/payments/accounts', (_req: Request, res: Response) => {
+  return res.json({
+    accounts: OFFICIAL_PAYMENT_ACCOUNTS,
+    minAmount: 100,
+    currency: 'PKR'
+  });
+});
+
+/**
+ * 10. Public: Submit Payment (JazzCash / Easypaisa)
+ * Flow: User enters Amount (min 100, no max limit), Name, Mobile, and Transaction ID
+ * Sets status = 'Pending', checks duplicates, triggers real Admin and User notifications
+ */
+app.post('/api/payments/submit', async (req: Request, res: Response) => {
   try {
-    const { customerName, mobileNumber, amount, transactionId, paymentDate, screenshotUrl } = req.body;
-    if (!customerName || !mobileNumber || !amount || !transactionId) {
-      return res.status(400).json({ error: 'Please provide Customer Name, Mobile Number, Amount, and Transaction ID.' });
+    const { userId, customerName, mobileNumber, amount, paymentMethod, transactionId } = req.body;
+
+    if (!customerName || !mobileNumber || !paymentMethod || !transactionId) {
+      return res.status(400).json({ error: 'Please provide Customer Name, Mobile Number, Payment Method, and Transaction ID.' });
     }
 
-    const record = await submitPayment({
+    const numAmount = typeof amount === 'string' ? parseFloat(amount.replace(/[^0-9.]/g, '')) : amount;
+    if (isNaN(numAmount) || numAmount < 100) {
+      return res.status(400).json({ error: 'Minimum payment amount is PKR 100. Payments below PKR 100 are not accepted.' });
+    }
+
+    if (paymentMethod !== 'JazzCash' && paymentMethod !== 'Easypaisa') {
+      return res.status(400).json({ error: 'Invalid payment method. Only JazzCash and Easypaisa are accepted.' });
+    }
+
+    const payment = await submitPayment({
+      userId,
       customerName,
       mobileNumber,
-      amount,
-      transactionId,
-      paymentDate: paymentDate || new Date().toISOString().split('T')[0],
-      screenshotUrl
+      amount: numAmount,
+      paymentMethod,
+      transactionId
     });
 
-    return res.status(201).json({ success: true, record });
-  } catch (error) {
-    console.error('[Payment Submission Error]:', error);
-    return res.status(500).json({ error: 'Failed to submit payment details' });
+    return res.status(201).json({
+      success: true,
+      payment,
+      message: 'Your payment has been submitted successfully and is pending verification.'
+    });
+  } catch (error: any) {
+    console.error('[Payment Submit Error]:', error.message);
+    const isDup = error.message.includes('already been submitted');
+    return res.status(isDup ? 409 : 400).json({ error: error.message || 'Failed to submit payment' });
   }
 });
 
 /**
- * 10. Public: Look Up Payment Verification Status
+ * 11. User Isolated: Get User Payment History
+ * Users only see their own transactions
  */
-app.get('/api/payments/status/:reference', (req: Request, res: Response) => {
+app.get('/api/payments/user-history', (req: Request, res: Response) => {
   try {
-    const record = getPaymentByReference(req.params.reference);
-    if (!record) {
-      return res.status(404).json({ error: 'Payment reference number not found' });
+    const userId = (req.query.userId as string) || '';
+    const mobile = (req.query.mobileNumber as string) || '';
+    if (!userId && !mobile) {
+      return res.json({ payments: [] });
     }
-    return res.json({
-      referenceNumber: record.referenceNumber,
-      customerName: record.customerName,
-      amount: record.amount,
-      status: record.status,
-      submissionDate: record.submissionDate,
-      paymentDate: record.paymentDate
-    });
+
+    const payments = getUserPaymentHistory(userId, mobile);
+    return res.json({ payments });
   } catch (error) {
-    return res.status(500).json({ error: 'Failed to look up payment' });
+    return res.status(500).json({ error: 'Failed to retrieve payment history' });
   }
 });
 
 /**
- * 11. Admin: Get All Payments
+ * 12. User Isolated: Get User Notifications
+ */
+app.get('/api/payments/user-notifications', (req: Request, res: Response) => {
+  try {
+    const userId = (req.query.userId as string) || '';
+    const mobile = (req.query.mobileNumber as string) || '';
+    if (!userId && !mobile) {
+      return res.json({ notifications: [] });
+    }
+
+    const notifications = getUserNotifications(userId, mobile);
+    return res.json({ notifications });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to retrieve notifications' });
+  }
+});
+
+/**
+ * 13. Admin: Get All Payments
  */
 app.get('/api/admin/payments', requireAdminAuth, (_req: AuthenticatedRequest, res: Response) => {
   try {
-    const payments = getAllPayments();
+    const payments = getAllAdminPayments();
     return res.json({ count: payments.length, payments });
   } catch (error) {
     console.error('[Admin Payments Error]:', error);
@@ -564,24 +611,60 @@ app.get('/api/admin/payments', requireAdminAuth, (_req: AuthenticatedRequest, re
 });
 
 /**
- * 12. Admin: Update Payment Verification Status
+ * 14. Admin: Verify / Approve or Reject Payment
+ * Actions: 'Approved' | 'Rejected'
  */
-app.patch('/api/admin/payments/:id', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
+app.patch('/api/admin/payments/:id/verify', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { status, adminNotes } = req.body;
-    if (!status || !['Pending Verification', 'Verified', 'Rejected'].includes(status)) {
-      return res.status(400).json({ error: 'Invalid payment status. Must be Pending Verification, Verified, or Rejected.' });
+    const { status, adminNotes, rejectionReason } = req.body;
+    if (!status || !['Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be either Approved or Rejected.' });
     }
 
-    const updated = await updatePaymentStatus(req.params.id, status, adminNotes, req.adminUser?.username || 'Admin');
+    const updated = await adminVerifyPayment(
+      req.params.id,
+      status,
+      adminNotes,
+      rejectionReason,
+      req.adminUser?.username || 'Admin'
+    );
+
     if (!updated) {
       return res.status(404).json({ error: 'Payment record not found' });
     }
 
     return res.json({ success: true, payment: updated });
+  } catch (error: any) {
+    console.error('[Admin Verify Error]:', error);
+    return res.status(500).json({ error: error.message || 'Failed to update payment status' });
+  }
+});
+
+/**
+ * 15. Admin: Real Payment Notifications
+ */
+app.get('/api/admin/payment-notifications', requireAdminAuth, (_req: AuthenticatedRequest, res: Response) => {
+  try {
+    const notifications = getAdminNotifications();
+    const unreadCount = notifications.filter(n => !n.read).length;
+    return res.json({ notifications, unreadCount });
   } catch (error) {
-    console.error('[Admin Payment Update Error]:', error);
-    return res.status(500).json({ error: 'Failed to update payment status' });
+    return res.status(500).json({ error: 'Failed to fetch admin notifications' });
+  }
+});
+
+/**
+ * 16. Admin: Mark Notifications Read
+ */
+app.post('/api/admin/payment-notifications/read', requireAdminAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { ids } = req.body;
+    if (Array.isArray(ids)) {
+      await markNotificationsAsRead(ids);
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: 'Failed to update notifications' });
   }
 });
 

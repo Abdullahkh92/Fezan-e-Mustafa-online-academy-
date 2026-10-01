@@ -20,10 +20,17 @@ service cloud.firestore {
       allow list: if true;
     }
 
-    // Bank Payment Submissions & Verification
+    // Payments & Verification
     match /payments/{paymentId} {
       allow get, update, delete: if isValidId(paymentId);
-      allow create: if isValidId(paymentId) && request.resource.data.customerName is string && request.resource.data.amount is string;
+      allow create: if isValidId(paymentId) && request.resource.data.customerName is string;
+      allow list: if true;
+    }
+
+    // Payment Notifications
+    match /payment_notifications/{notificationId} {
+      allow get, update, delete: if isValidId(notificationId);
+      allow create: if isValidId(notificationId) && request.resource.data.title is string;
       allow list: if true;
     }
 
